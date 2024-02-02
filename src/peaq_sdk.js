@@ -1,7 +1,6 @@
 // basic peaq integration on their AGUNG testnet based on docs:
 // https://docs.peaq.network/docs/build/getting-started/
 // **TODO** make it compatible with typescript and add further SDK functionality
-
 import { mnemonicGenerate, cryptoWaitReady } from "@polkadot/util-crypto";
 import { Sdk } from "@peaq-network/sdk";
 import dotenv from 'dotenv';
@@ -19,8 +18,11 @@ const agung_base_url = "wss://wsspc1-qa.agung.peaq.network";
 //   };
 
 // used to convert Uint8Array to reabable string
-const toHexString = bytes => 
-    bytes.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '');
+function toHexString(bytes) {
+    return bytes.reduce(function(str, byte) {
+        return str + byte.toString(16).padStart(2, '0');
+    }, '');
+}
 
 // creates new agung sdk instance
 async function createSdkInstance(){
@@ -34,7 +36,7 @@ async function createSdkInstance(){
 }
 
 // creates new decentralized ID based on the name passed
-const createDID = async (sdk, name) => {
+async function createDID(sdk, name) {
     const { hash } = await sdk.did.create({
         name: name,
     });
@@ -43,7 +45,7 @@ const createDID = async (sdk, name) => {
 }
 
 // reads the previously created DID name to retrieve information linked
-const readDID = async (sdk, name) => {
+async function readDID(sdk, name) {
    // DEBUGGING NOTES:
    // cannot have {} around did var, but must have brackets around name... confusing when looking at peaq docs
     const did = await sdk.did.read({name: name});
@@ -51,22 +53,22 @@ const readDID = async (sdk, name) => {
 }
 
 // creates role for the address that is linked to this sdk instance
-const createRole = async (sdk, roleName) => {
+async function createRole(sdk, roleName) {
     const { roleId: createdRoleId } = await sdk.rbac.createRole({
         roleName: roleName,
       });
     return createdRoleId;
-};
+}
 
 // fetches role information for the roleId passed
-const fetchRole = async (sdk, roleId) => {
+async function fetchRole(sdk, roleId, OWNER) {
     if (!OWNER) throw new Error("OWNER is not defined in .env file");
     const role = await sdk.rbac.fetchRole({
         owner: OWNER,
         roleId: roleId,
       });
     return role;
-};
+}
 
 async function main() {
     const sdk = await createSdkInstance();
@@ -86,7 +88,7 @@ async function main() {
         const roleID = await createRole(sdk, roleName);
         console.log(`Created role Id: ${roleID}\n`);
 
-        const role = await fetchRole(sdk, roleID);
+        const role = await fetchRole(sdk, roleID, OWNER);
         console.log(`Fetched role: ${JSON.stringify(role)}\n`);
 
     }
@@ -97,7 +99,13 @@ async function main() {
     }
 }
 
-main().catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
-  });
+// Checks if the module is thje main module being run
+// Used to prevent unit tests from executing the code
+
+// Application-specific code
+// main().catch((error) => {
+//     console.error(error);
+//     process.exitCode = 1;
+// });
+
+export {main, createDID, readDID, createRole, fetchRole};
