@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "mocha tests/test_sdk.js"
+    "test": "mocha test/test_sdk.js"
   },
   "keywords": [],
   "author": "",

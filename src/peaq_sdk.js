@@ -48,7 +48,9 @@ async function createDID(sdk, name) {
 async function readDID(sdk, name) {
    // DEBUGGING NOTES:
    // cannot have {} around did var, but must have brackets around name... confusing when looking at peaq docs
-    const did = await sdk.did.read({name: name});
+    const did = await sdk.did.read({
+        name: name
+    });
     return did;
 }
 
@@ -70,12 +72,37 @@ async function fetchRole(sdk, roleId, OWNER) {
     return role;
 }
 
+async function createPermission(sdk, permName) {
+    const createdPermissionId = await sdk.rbac.createPermission({
+        permissionName: permName,
+      });
+    return createdPermissionId;
+}
+
+async function disablePermission(sdk, permId) {
+    const message = await sdk.rbac.disablePermission({
+        permissionId: permId
+    });
+    return message;
+}
+
+async function fetchPermission(sdk, permId, OWNER) {
+    if (!OWNER) throw new Error("OWNER is not defined in .env file");
+    const permission = await sdk.rbac.fetchPermission({
+        owner: OWNER,
+        permissionId: permId,
+    });
+
+    return permission;
+}
+
 async function main() {
     const sdk = await createSdkInstance();
     await sdk.connect();
 
     const name = 'myDID';
     const roleName = "myrole";
+    const permName = 'myPermission';
 
 
     try {
@@ -91,6 +118,19 @@ async function main() {
         const role = await fetchRole(sdk, roleID, OWNER);
         console.log(`Fetched role: ${JSON.stringify(role)}\n`);
 
+        const permId = await createPermission(sdk, permName);
+        console.log(`Created a permission with id: ${permId.permissionId}\n`);
+
+        const permission = await fetchPermission(sdk, permId.permissionId, OWNER);
+        console.log(`Permission for sdk owner: ${JSON.stringify(permission)}\n`);
+
+        const message = await disablePermission(sdk, permId.permissionId);
+        console.log(`Removed previously created permission with the message: ${JSON.stringify(message)}\n`);
+
+        const permission2 = await fetchPermission(sdk, permId.permissionId, OWNER);
+        console.log(`Permission for sdk owner: ${JSON.stringify(permission2)}\n`);
+
+
     }
     catch (error) {
         console.error(error);
@@ -99,13 +139,5 @@ async function main() {
     }
 }
 
-// Checks if the module is thje main module being run
-// Used to prevent unit tests from executing the code
-
-// Application-specific code
-// main().catch((error) => {
-//     console.error(error);
-//     process.exitCode = 1;
-// });
-
-export {main, createDID, readDID, createRole, fetchRole};
+// exports used to run main from index.js and execute the tests in the test_sdk file
+export {main, createDID, readDID, createRole, fetchRole, createPermission, fetchPermission, disablePermission};

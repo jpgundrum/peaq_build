@@ -1,10 +1,13 @@
 import { expect } from "chai";
-import { readDID, createDID, createRole, fetchRole } from "../src/peaq_sdk.js";
+import { readDID, createDID, createRole, fetchRole, createPermission, fetchPermission, disablePermission } from "../src/peaq_sdk.js";
 
 const name = "myDID";
 const roleName = "myRole";
+const permName = 'myPermission';
 const ownerAddress = "5GsA2xjSBY6DhpTGKKdJ4BjUYpbBaP5wxZnvBoHSytURn6N2";
 const roleId = "78709009-cf06-4224-8632-b5ee8512";
+const permId = "18709409-bc06-4444-2222-b4zz0000";
+const message = "Successfully disable permission 18709409-bc06-4444-2222-b4zz0000";
 
 describe("peaq SDK tests", function() {
     describe("DID modules", function() {
@@ -43,6 +46,25 @@ describe("peaq SDK tests", function() {
             expect(result.name).to.equal("myRole");
             expect(result.enable).to.be.true;
         });
+        it("Check creating a permission function", async function() {
+            const result = await createPermission(mockSdk, permName);
+
+            expect(result.permissionId).to.equal("18709409-bc06-4444-2222-b4zz0000");
+        });
+        it("Check creating a permission and then fetching that permission", async function() {
+            const result = await createPermission(mockSdk, permName);
+            const permission = await fetchPermission(mockSdk, result.permissionId, ownerAddress);
+
+            expect(permission.id).to.equal("18709409-bc06-4444-2222-b4zz0000");
+            expect(permission.name).to.equal("myPermission");
+            expect(permission.enable).to.be.true;
+        });
+        it("Check disabling a permission", async function() {
+            const result = await createPermission(mockSdk, permName);
+            const message = await disablePermission(mockSdk, result.permissionId);
+
+            expect(message.message).to.equal("Successfully disable permission 18709409-bc06-4444-2222-b4zz0000");
+        });
     });
   });
 
@@ -53,12 +75,12 @@ let myArray = new Uint8Array([
 
 const mockSdk = {
     did: {
-        create: async({name}) => {
+        create: async() => {
             return {
                 hash: myArray
             };
         },
-        read: async ({name}) => {
+        read: async () => {
             return {
                 name: "test-did-14",
                 value: "0x0a3964...316433",
@@ -83,17 +105,34 @@ const mockSdk = {
         }
     },
     rbac: {
-        createRole: async ({roleName}) => {
+        createRole: async () => {
             return {
                 roleId: roleId
             }
         },
-        fetchRole: async ({owner, roldId}) => {
+        fetchRole: async () => {
             return {
                 id: roleId,
                 name: roleName,
                 enable: true
             }
-        }
+        },
+        createPermission: async () => {
+            return {
+                permissionId: permId
+            }
+        },
+        fetchPermission: async () => {
+            return {
+                id: permId,
+                name: permName,
+                enable: true
+            }
+        },
+        disablePermission: async () => {
+            return {
+                message: message
+            }
+        },
     }
 };
