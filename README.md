@@ -2,16 +2,19 @@
 Simple project allows the user to connect to the AGUNG testnet and use the peaq sdk to setup a decentralized ID, intitalize roles, read previously created DID information, etc
 
 ## Installation and setup
-1. Install Node.js and npm
+1. **Install Node.js and npm**
 
-In order to get started you must have Node.js and npm package manager downloaded on your computer.
+    In order to get started you must have Node.js and npm package manager downloaded on your computer.
 
-2. Install Dependencies
+2. **Install Dependencies**
 
-Next you must install of the dependencies located in the package.json file to have proper version control
+    Next you must install of the dependencies located in the package.json file to have proper version control
 
-```npm install```
+    ```npm install```
 
+3. **Establish .env file**
+
+    To protect your wallet it is important to setup a .env file where you can hide your MNEMONIC seed phrase and OWNER address. To do this create a new [polkadot wallet](https://polkadot.js.org/extension/). Write down your seed phrase in a safe place and obtain your wallet's address. Next create a new file in this repositroy called .env. Set MNEMONIC="my random seed phrase" and OWNER="5EF5EF5EFxxxxxx". Next you will need to obtain AGUNG testnet tokens. You can access this facuet on the peaq discord with these [directions](https://docs.peaq.network/docs/learn/token-and-token-utility/agung-token-faucet/) 
 
 ## Run script / Tests
 Can start the script with cmd:

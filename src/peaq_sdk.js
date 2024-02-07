@@ -130,7 +130,6 @@ async function main() {
         const permission2 = await fetchPermission(sdk, permId.permissionId, OWNER);
         console.log(`Permission for sdk owner: ${JSON.stringify(permission2)}\n`);
 
-
     }
     catch (error) {
         console.error(error);
