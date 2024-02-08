@@ -24,3 +24,6 @@ This will start the main script execution by calling index.js. (Used index.js so
 
 Can execute the tests with cmd:
 ```npm test```
+
+## Github Actions
+Added .github/workflows/test_api.yml to execute tests and post test results to this github repository each time new code is pushed to main
