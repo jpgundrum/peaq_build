@@ -22,3 +22,13 @@ jobs:
 
             - name: API testing
               run: npm test
+            
+            - name: API testing generate results .xml file
+              run: npm run test:report
+
+            - name: Publish Test Results
+              uses: EnricoMi/publish-unit-test-result-action@v2
+              if: always()
+              with:
+                files: |
+                  test-results/**/*.xml
