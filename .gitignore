@@ -4,5 +4,5 @@ package-lock.json
 .env
 
 # local test reports
-test-results/**/*.xml
+test-results
 coverage
