@@ -22,7 +22,7 @@ Can start the script with cmd:
 
 This will start the main script execution by calling index.js. (Used index.js so unit tests won't execute peaq_sdk on import)
 
-Can execute the tests with cmd:
+Can execute the tests to see results and coverage with cmd:
 ```npm test```
 
 ## Github Actions

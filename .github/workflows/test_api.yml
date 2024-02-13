@@ -23,8 +23,13 @@ jobs:
             - name: Install Dependencies
               run: npm install
 
-            - name: API testing
+            - name: Run API tests and collect coverage
               run: npm test
+
+            - name: Upload coverage to Codecov
+              uses: codecov/codecov-action@v2
+              with:
+                file: coverage/lcov.info
             
             - name: API testing generate results .xml file
               run: npm run test:report
@@ -33,5 +38,4 @@ jobs:
               uses: EnricoMi/publish-unit-test-result-action@v2
               if: always()
               with:
-                files: |
-                  test-results/**/*.xml
+                file: test-results/**/*.xml

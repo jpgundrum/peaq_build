@@ -1,4 +1,8 @@
+# local installs
 node_modules
 package-lock.json
 .env
+
+# local test reports
 test-results/**/*.xml
+coverage
