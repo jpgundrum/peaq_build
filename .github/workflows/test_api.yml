@@ -2,9 +2,11 @@ name: run api testing
 on:
     push:
         branches: [main]
+
 permissions:
   checks: write
   contents: read
+  
 jobs:
     api-test:
         runs-on: ubuntu-latest
@@ -26,11 +28,12 @@ jobs:
             - name: Run API tests and collect coverage
               run: npm test
 
-            - name: Upload coverage to Codecov
-              uses: codecov/codecov-action@v2
-              with:
-                file: coverage/lcov.info
-            
+            - name: Upload coverage reports to Codecov
+              uses: codecov/codecov-action@v4.0.1
+              env:
+                token: ${{ secrets.CODECOV_TOKEN }}
+                slug: jpgundrum/peaq_build
+
             - name: API testing generate results .xml file
               run: npm run test:report
 
