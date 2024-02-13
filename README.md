@@ -25,5 +25,8 @@ This will start the main script execution by calling index.js. (Used index.js so
 Can execute the tests to see results and coverage with cmd:
 ```npm test```
 
+Look at current code coverage on codecov for main branch [here](https://app.codecov.io/github/jpgundrum/peaq_build)
+
+
 ## Github Actions
 Added .github/workflows/test_api.yml to execute tests and post test results to this github repository each time new code is pushed to main
