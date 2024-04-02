@@ -6,3 +6,5 @@ package-lock.json
 # local test reports
 test-results
 coverage
+
+.DS_Store
