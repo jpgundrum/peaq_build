@@ -2,6 +2,7 @@
     "trains": [
       {
         "id": "T101",
+        "admin": "myemail@gmail.com",
         "name": "Highland Express",
         "currentLocation": "Station 3",
         "speed": "90mph",
@@ -16,6 +17,7 @@
       },
       {
         "id": "T202",
+        "admin": "myemail@gmail.com",
         "name": "City Zephyr",
         "currentLocation": "Station 2",
         "speed": "70mph",
@@ -30,6 +32,7 @@
       },
       {
         "id": "T303",
+        "admin": "myemail@gmail.com",
         "name": "Mountain Climber",
         "currentLocation": "Station 4",
         "speed": "60mph",
@@ -44,6 +47,7 @@
       },
       {
         "id": "T404",
+        "admin": "myemail@gmail.com",
         "name": "Coastal Voyager",
         "currentLocation": "Station 1",
         "speed": "85mph",
@@ -58,6 +62,7 @@
       },
       {
         "id": "T505",
+        "admin": "myemail@gmail.com",
         "name": "Night Owl",
         "currentLocation": "En Route between Station 2 and Station 3",
         "speed": "75mph",

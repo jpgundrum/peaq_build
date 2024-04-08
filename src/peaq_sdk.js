@@ -40,14 +40,14 @@ async function createDID(sdk, name) {
     const { hash } = await sdk.did.create({
         name: name,
     });
-    const didString = "0x" + toHexString(hash);
+    const didString = "did:peaq:" + toHexString(hash);
     return didString;
 }
 
 // reads the previously created DID name to retrieve information linked
 async function readDID(sdk, name) {
    // DEBUGGING NOTES:
-   // cannot have {} around did var, but must have brackets around name... confusing when looking at peaq docs
+   // Must have brackets around name field when reading... brackets are omitted when looking at peaq docs
     const did = await sdk.did.read({
         name: name
     });
