@@ -118,20 +118,26 @@ async function createDID(sdk)  {
     const keyring = new Keyring({ type: "sr25519" });
     // Creating key pair for the owner  of the subject  from seed
     const OwnerPair = keyring.addFromUri(OWNER_SEED);
-    // Creating key pair for the subject of the DID from seed
-    const DIDSubjectPair = keyring.addFromUri(DID_SUBJECT_SEED);
-    // Creating key pair for the DePin from seed
-    const DePinPair = keyring.addFromUri(DEPIN_SEED);
-    
-    // Address derived from DIDSubjectPair
-    const DIDAddress = DIDSubjectPair.address;
 
-    // Signer Address derived from OwnerPair
-    const signerAddress = OwnerPair.address;
+    // TODO: Do I need the infor below??
+    // // Creating key pair for the subject of the DID from seed
+    // const DIDSubjectPair = keyring.addFromUri(DID_SUBJECT_SEED);
+    // // Creating key pair for the DePin from seed
+    // const DePinPair = keyring.addFromUri(DEPIN_SEED);
+    
+    // // Address derived from DIDSubjectPair
+    // const DIDAddress = DIDSubjectPair.address;
+
+    // // Signer Address derived from OwnerPair
+    // const signerAddress = OwnerPair.address;
 
     
     // create a loop that maps train id's to newly create peaq id's
     for (let i = 0; i < jsonData.trains.length; i++){
+        // generate a new seed for the particular train
+        const machineSeed = mnemonicGenerate();
+
+
         // obtain email from data source
         const email = jsonData.trains[i].admin;
         const postdata = { email: email,  did_address: DIDAddress };
@@ -196,6 +202,7 @@ async function main() {
 
     try {
         sdk = await createDID(sdk);
+        generateAndSignData();
         // TODO use a proper encryption technique for the purposes -> ask Iredia/Jona
 
     }

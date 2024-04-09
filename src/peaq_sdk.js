@@ -1,15 +1,19 @@
 // basic peaq integration on their AGUNG testnet based on docs:
 // https://docs.peaq.network/docs/build/getting-started/
-// **TODO** make it compatible with typescript and add further SDK functionality
+
+import axios from "axios";
+import { ApiPromise, WsProvider } from '@polkadot/api';
+import { hexToU8a, u8aToHex, stringToU8a, stringToHex } from "@polkadot/util";
 import { mnemonicGenerate, cryptoWaitReady } from "@polkadot/util-crypto";
 import { Sdk } from "@peaq-network/sdk";
+import Keyring from "@polkadot/keyring";
 import dotenv from 'dotenv';
 
 dotenv.config();
 const MNEMONIC = process.env.MNEMONIC;
 const OWNER = process.env.OWNER;
 
-const agung_base_url = "wss://wsspc1-qa.agung.peaq.network";
+const AGUNG_BASE_URL = "wss://wsspc1-qa.agung.peaq.network";
 
 
 // to generate a random mnemonic... however it lacks funding
@@ -29,19 +33,73 @@ async function createSdkInstance(){
     if (!MNEMONIC) throw new Error("MNEMONIC is not defined in .env file");
     await cryptoWaitReady();
     const sdk = await Sdk.createInstance({
-        baseUrl: agung_base_url,
+        baseUrl: AGUNG_BASE_URL,
         seed: MNEMONIC,
     });
     return sdk;
 }
 
+async function generateKeyPair() {
+    const keyring = new Keyring({ type: "sr25519" });
+    const machineSeed = mnemonicGenerate();
+    const machinePair = keyring.addFromUri(MNEMONIC);
+    return machinePair;
+}
+
+async function generateAndSignData(machinePair) {
+    await cryptoWaitReady();
+    const data = "Machine-generated data";
+    const dataHex = stringToU8a(data);
+    const signature = machinePair.sign(dataHex);
+  
+    return { dataHex, signature: u8aToHex(signature) };
+}
+
+async function dataStorage(machinePair) {
+    await cryptoWaitReady();
+    // Establish a new ApiPromise instance using the peaq mainnet connection URL
+    const wsp = new WsProvider(AGUNG_BASE_URL);
+    const api = await (await ApiPromise.create({ provider: wsp })).isReady;
+
+    // create data to be stored on peaq blockchain
+    const dataHex = JSON.stringify("test-data");
+    const signature = machinePair.sign(dataHex);
+    const payload = {
+        data: dataHex,
+        signature: signature,
+    };
+    
+    const payloadHex = u8aToHex(signature);
+
+    // check to make sure parameter lengths are proper size
+    if (machinePair.address.length > 64) {
+        throw new Error("Item type exceeds maximum length of 64 bytes.");
+    }
+    if (payloadHex.length > 256) {
+        throw new Error("Item exceeds maximum length of 256 bytes.");
+    }
+
+    // // TODO when should below code be used?
+    // let response = await axios.post(`${AGUNG_BASE_URL}/v1/data/store`, {
+    //     item_key: itemType,
+    //     email: email
+    // });
+
+    var tx = await api.tx.peaqStorage
+    .addItem(machinePair.address, payloadHex).signAndSend(machinePair, (result) => {
+        console.log(`Transaction result: ${JSON.stringify(result)}\n\n`);
+        tx();
+});
+    wsp.disconnect();
+}
+
 // creates new decentralized ID based on the name passed
-async function createDID(sdk, name) {
+async function createDID(sdk, machinePair) {
     const { hash } = await sdk.did.create({
-        name: name,
+        name: `did:peaq:${machinePair.address}`, address: machinePair.address
     });
-    const didString = "did:peaq:" + toHexString(hash);
-    return didString;
+    const didHash = "did:peaq:" + toHexString(hash);
+    return didHash;
 }
 
 // reads the previously created DID name to retrieve information linked
@@ -104,31 +162,38 @@ async function main() {
     const roleName = "myrole";
     const permName = 'myPermission';
 
+    const machinePair = await generateKeyPair();
 
     try {
-        const decentralizedID = await createDID(sdk, name);
-        console.log(`\nDID address: ${decentralizedID}\n`);
+        // const didHash = await createDID(sdk, machinePair);
+        // console.log(`\nDID hash: ${didHash}\n`);
 
-        const didInfo = await readDID(sdk, name);
-        console.log(`DID data: \n${JSON.stringify(didInfo)}\n`);
+        const { dataHex, signature } = await generateAndSignData(machinePair);
+        console.log(dataHex);
+        console.log(signature);
 
-        const roleID = await createRole(sdk, roleName);
-        console.log(`Created role Id: ${roleID}\n`);
+        await dataStorage(machinePair);
 
-        const role = await fetchRole(sdk, roleID, OWNER);
-        console.log(`Fetched role: ${JSON.stringify(role)}\n`);
+        // const didInfo = await readDID(sdk, name);
+        // console.log(`DID data: \n${JSON.stringify(didInfo)}\n`);
 
-        const permId = await createPermission(sdk, permName);
-        console.log(`Created a permission with id: ${permId.permissionId}\n`);
+        // const roleID = await createRole(sdk, roleName);
+        // console.log(`Created role Id: ${roleID}\n`);
 
-        const permission = await fetchPermission(sdk, permId.permissionId, OWNER);
-        console.log(`Permission for sdk owner: ${JSON.stringify(permission)}\n`);
+        // const role = await fetchRole(sdk, roleID, OWNER);
+        // console.log(`Fetched role: ${JSON.stringify(role)}\n`);
 
-        const message = await disablePermission(sdk, permId.permissionId);
-        console.log(`Removed previously created permission with the message: ${JSON.stringify(message)}\n`);
+        // const permId = await createPermission(sdk, permName);
+        // console.log(`Created a permission with id: ${permId.permissionId}\n`);
 
-        const permission2 = await fetchPermission(sdk, permId.permissionId, OWNER);
-        console.log(`Permission for sdk owner: ${JSON.stringify(permission2)}\n`);
+        // const permission = await fetchPermission(sdk, permId.permissionId, OWNER);
+        // console.log(`Permission for sdk owner: ${JSON.stringify(permission)}\n`);
+
+        // const message = await disablePermission(sdk, permId.permissionId);
+        // console.log(`Removed previously created permission with the message: ${JSON.stringify(message)}\n`);
+
+        // const permission2 = await fetchPermission(sdk, permId.permissionId, OWNER);
+        // console.log(`Permission for sdk owner: ${JSON.stringify(permission2)}\n`);
 
     }
     catch (error) {
