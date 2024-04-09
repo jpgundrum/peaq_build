@@ -54,7 +54,7 @@ async function generateAndSignData(ownerPair) {
         signature: signature,
     };
     
-    const payloadHex = u8aToHex(payload);
+    const payloadHex = "payload";
     return payloadHex;
 }
 
@@ -62,7 +62,7 @@ async function dataStorage(ownerPair) {
     // Establish a new ApiPromise instance using the peaq mainnet connection URL
     const wsp = new WsProvider(AGUNG_BASE_URL);
     const api = await (await ApiPromise.create({ provider: wsp })).isReady;
-
+    
     const payloadHex = await generateAndSignData(ownerPair);
 
     // check to make sure parameter lengths are proper sizes
@@ -79,11 +79,34 @@ async function dataStorage(ownerPair) {
     //     email: email
     // });
 
+    // First time use of the ownerPair.address must use .addItem; if it has been used before you must use .updateItem or else it will fail
+    // var tx = await api.tx.peaqStorage
+    // .addItem(ownerPair.address, payloadHex).signAndSend(ownerPair, (result) => {
+    //     console.log(`Transaction result: ${JSON.stringify(result)}\n\n`);
+    //     tx();
+    // });
     var tx = await api.tx.peaqStorage
-    .addItem(ownerPair.address, payloadHex).signAndSend(ownerPair, (result) => {
+    .updateItem(ownerPair.address, payloadHex).signAndSend(ownerPair, (result) => {
         console.log(`Transaction result: ${JSON.stringify(result)}\n\n`);
         tx();
-});
+    });
+
+    api.disconnect();
+    wsp.disconnect();
+}
+
+async function verifyDataStorage(ownerPair) {
+    const wsp = new WsProvider(AGUNG_BASE_URL);
+    const api = await (await ApiPromise.create({ provider: wsp })).isReady;
+
+
+    var tx = await api.tx.peaqStorage
+    .getItem(ownerPair.address).signAndSend(ownerPair, (result) => {
+        console.log(`Transaction result: ${JSON.stringify(result)}\n\n`);
+        tx();
+    });
+
+    api.disconnect();
     wsp.disconnect();
 }
 
@@ -160,13 +183,15 @@ async function main() {
     const ownerPair = await generateKeyPair();
 
     try {
-        const didHash = await createDID(sdk, ownerPair);
-        console.log(`\nDID hash: ${didHash}\n`);
+        // const didHash = await createDID(sdk, ownerPair);
+        // console.log(`\nDID hash: ${didHash}\n`);
 
-        const didInfo = await readDID(sdk, ownerPair);
-        console.log(`DID data: \n${JSON.stringify(didInfo)}\n`);
+        // const didInfo = await readDID(sdk, ownerPair);
+        // console.log(`DID data: \n${JSON.stringify(didInfo)}\n`);
 
         await dataStorage(ownerPair);
+
+        await verifyDataStorage(ownerPair);
 
         // const roleID = await createRole(sdk, roleName);
         // console.log(`Created role Id: ${roleID}\n`);
@@ -193,6 +218,54 @@ async function main() {
         await sdk.disconnect();
     }
 }
+
+// code if you want to wait for transaction to be appended before going to next part of code
+
+// updateStorage:
+    // try {
+    //     const blockHash = await submitTransaction(api, api.tx.peaqStorage.updateItem(ownerPair.address, payloadHex), ownerPair);
+    //     console.log(`Transaction included in block hash: ${blockHash}`);
+        
+    //     // Additional logic after transaction is included or finalized...
+    //   } catch (error) {
+    //     console.error(`Error submitting transaction: ${error.message}`);
+    //   } finally {
+    //     await api.disconnect();
+    //   }
+
+// readStorage:
+// try {
+//     const blockHash = await submitTransaction(api, api.tx.peaqStorage.getItem(ownerPair.address), ownerPair);
+//     console.log(`Transaction included in block hash: ${blockHash}`);
+
+//     // Additional logic after transaction is included or finalized...
+//   } catch (error) {
+//     console.error(`Error submitting transaction: ${error.message}`);
+//   } finally {
+//     await api.disconnect();
+//   }
+
+  
+// function submitTransaction(api, extrinsic, ownerPair) {
+//     return new Promise((resolve, reject) => {
+//       extrinsic.signAndSend(ownerPair, ({ status, events }) => {
+//         console.log(`Current transaction status: ${status.type}`);
+  
+//         if (status.isInBlock) {
+//           console.log(`Transaction is in block: ${status.asInBlock.toString()}`);
+//           resolve(status.asInBlock.toString()); // Resolve with the block hash
+//         } else if (status.isFinalized) {
+//           console.log(`Transaction is finalized: ${status.asFinalized.toString()}`);
+//           resolve(status.asFinalized.toString()); // Resolve with the finalized block hash
+//         } else if (status.isDropped || status.isInvalid || status.isUsurped || status.isRetracted) {
+//           reject(new Error(`Transaction failed with status: ${status.type}`));
+//         }
+//       }).catch((error) => {
+//         console.error(`Transaction failed with error: ${error.toString()}`);
+//         reject(error);
+//       });
+//     });
+//   }
 
 // exports used to run main from index.js and execute the tests in the test_sdk file
 export {main, createDID, readDID, createRole, fetchRole, createPermission, fetchPermission, disablePermission};
