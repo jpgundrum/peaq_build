@@ -41,38 +41,32 @@ async function createSdkInstance(){
 
 async function generateKeyPair() {
     const keyring = new Keyring({ type: "sr25519" });
-    const machineSeed = mnemonicGenerate();
-    const machinePair = keyring.addFromUri(MNEMONIC);
-    return machinePair;
+    const machineSeed = mnemonicGenerate(); // update to machine?? need funds.
+    const ownerPair = keyring.addFromUri(MNEMONIC); // for now using my supplied agung wallet
+    return ownerPair;
 }
 
-async function generateAndSignData(machinePair) {
-    await cryptoWaitReady();
-    const data = "Machine-generated data";
-    const dataHex = stringToU8a(data);
-    const signature = machinePair.sign(dataHex);
-  
-    return { dataHex, signature: u8aToHex(signature) };
-}
-
-async function dataStorage(machinePair) {
-    await cryptoWaitReady();
-    // Establish a new ApiPromise instance using the peaq mainnet connection URL
-    const wsp = new WsProvider(AGUNG_BASE_URL);
-    const api = await (await ApiPromise.create({ provider: wsp })).isReady;
-
-    // create data to be stored on peaq blockchain
-    const dataHex = JSON.stringify("test-data");
-    const signature = machinePair.sign(dataHex);
+async function generateAndSignData(ownerPair) {
+    const dataHex = "test-data";
+    const signature = ownerPair.sign(dataHex);
     const payload = {
         data: dataHex,
         signature: signature,
     };
     
-    const payloadHex = u8aToHex(signature);
+    const payloadHex = u8aToHex(payload);
+    return payloadHex;
+}
 
-    // check to make sure parameter lengths are proper size
-    if (machinePair.address.length > 64) {
+async function dataStorage(ownerPair) {
+    // Establish a new ApiPromise instance using the peaq mainnet connection URL
+    const wsp = new WsProvider(AGUNG_BASE_URL);
+    const api = await (await ApiPromise.create({ provider: wsp })).isReady;
+
+    const payloadHex = await generateAndSignData(ownerPair);
+
+    // check to make sure parameter lengths are proper sizes
+    if (ownerPair.address.length > 64) {
         throw new Error("Item type exceeds maximum length of 64 bytes.");
     }
     if (payloadHex.length > 256) {
@@ -86,7 +80,7 @@ async function dataStorage(machinePair) {
     // });
 
     var tx = await api.tx.peaqStorage
-    .addItem(machinePair.address, payloadHex).signAndSend(machinePair, (result) => {
+    .addItem(ownerPair.address, payloadHex).signAndSend(ownerPair, (result) => {
         console.log(`Transaction result: ${JSON.stringify(result)}\n\n`);
         tx();
 });
@@ -94,18 +88,19 @@ async function dataStorage(machinePair) {
 }
 
 // creates new decentralized ID based on the name passed
-async function createDID(sdk, machinePair) {
+async function createDID(sdk, ownerPair) {
+    // TODO how to chnage the document fields after creating from the readDID function
     const { hash } = await sdk.did.create({
-        name: `did:peaq:${machinePair.address}`, address: machinePair.address
-    });
-    const didHash = "did:peaq:" + toHexString(hash);
+        name: `did:peaq:${ownerPair.address}`});
+    const didHash = toHexString(hash);
     return didHash;
 }
 
 // reads the previously created DID name to retrieve information linked
-async function readDID(sdk, name) {
+async function readDID(sdk, ownerPair) {
    // DEBUGGING NOTES:
    // Must have brackets around name field when reading... brackets are omitted when looking at peaq docs
+   const name = `did:peaq:${ownerPair.address}`;
     const did = await sdk.did.read({
         name: name
     });
@@ -162,20 +157,16 @@ async function main() {
     const roleName = "myrole";
     const permName = 'myPermission';
 
-    const machinePair = await generateKeyPair();
+    const ownerPair = await generateKeyPair();
 
     try {
-        // const didHash = await createDID(sdk, machinePair);
-        // console.log(`\nDID hash: ${didHash}\n`);
+        const didHash = await createDID(sdk, ownerPair);
+        console.log(`\nDID hash: ${didHash}\n`);
 
-        const { dataHex, signature } = await generateAndSignData(machinePair);
-        console.log(dataHex);
-        console.log(signature);
+        const didInfo = await readDID(sdk, ownerPair);
+        console.log(`DID data: \n${JSON.stringify(didInfo)}\n`);
 
-        await dataStorage(machinePair);
-
-        // const didInfo = await readDID(sdk, name);
-        // console.log(`DID data: \n${JSON.stringify(didInfo)}\n`);
+        await dataStorage(ownerPair);
 
         // const roleID = await createRole(sdk, roleName);
         // console.log(`Created role Id: ${roleID}\n`);
