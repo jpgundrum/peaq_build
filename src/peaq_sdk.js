@@ -3,9 +3,10 @@
 
 import axios from "axios";
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { hexToU8a, u8aToHex, stringToU8a, stringToHex } from "@polkadot/util";
-import { mnemonicGenerate, cryptoWaitReady } from "@polkadot/util-crypto";
+import { hexToU8a, u8aToHex, stringToU8a, stringToHex, u8aToString } from "@polkadot/util";
+import { mnemonicGenerate, cryptoWaitReady, decodeAddress, blake2AsHex, encodeAddress } from "@polkadot/util-crypto";
 import { Sdk } from "@peaq-network/sdk";
+import { defaultOptions } from '@peaq-network/types';
 import Keyring from "@polkadot/keyring";
 import dotenv from 'dotenv';
 
@@ -21,23 +22,29 @@ const AGUNG_BASE_URL = "wss://wsspc1-qa.agung.peaq.network";
 //     return mnemonicGenerate();
 //   };
 
-// used to convert Uint8Array to reabable string
-function toHexString(bytes) {
-    return bytes.reduce(function(str, byte) {
-        return str + byte.toString(16).padStart(2, '0');
-    }, '');
-}
+/// TODO ask -> which is better to use arrow or normal declaration functions
+const createSdkInstance = async () => {
+    try {
+      const sdkInstance = await Sdk.createInstance({ baseUrl: AGUNG_BASE_URL,
+        seed: MNEMONIC
+     });
+      return sdkInstance;
+    } catch (error) {
+      console.error(`Failed to create SDK instance: ${error}`);
+      throw error;
+    }
+  };
 
 // creates new agung sdk instance
-async function createSdkInstance(){
-    if (!MNEMONIC) throw new Error("MNEMONIC is not defined in .env file");
-    await cryptoWaitReady();
-    const sdk = await Sdk.createInstance({
-        baseUrl: AGUNG_BASE_URL,
-        seed: MNEMONIC,
-    });
-    return sdk;
-}
+// async function createSdkInstance(){
+//     if (!MNEMONIC) throw new Error("MNEMONIC is not defined in .env file");
+//     await cryptoWaitReady();
+//     const sdk = await Sdk.createInstance({
+//         baseUrl: AGUNG_BASE_URL,
+//         seed: MNEMONIC,
+//     });
+//     return sdk;
+// }
 
 async function generateKeyPair() {
     const keyring = new Keyring({ type: "sr25519" });
@@ -62,6 +69,8 @@ async function dataStorage(ownerPair) {
     // Establish a new ApiPromise instance using the peaq mainnet connection URL
     const wsp = new WsProvider(AGUNG_BASE_URL);
     const api = await (await ApiPromise.create({ provider: wsp })).isReady;
+    const test = api.tx.timestamp;
+
     
     const payloadHex = await generateAndSignData(ownerPair);
 
@@ -85,8 +94,13 @@ async function dataStorage(ownerPair) {
     //     console.log(`Transaction result: ${JSON.stringify(result)}\n\n`);
     //     tx();
     // });
+
+    const toBytes = u8aToHex(ownerPair.address);
+
+    const toyBytesPayload = stringToHex(payloadHex);
+    
     var tx = await api.tx.peaqStorage
-    .updateItem(ownerPair.address, payloadHex).signAndSend(ownerPair, (result) => {
+    .updateItem(toBytes, payloadHex).signAndSend(ownerPair, (result) => {
         console.log(`Transaction result: ${JSON.stringify(result)}\n\n`);
         tx();
     });
@@ -99,12 +113,19 @@ async function verifyDataStorage(ownerPair) {
     const wsp = new WsProvider(AGUNG_BASE_URL);
     const api = await (await ApiPromise.create({ provider: wsp })).isReady;
 
+   // console.log(ownerPair.address);
 
-    var tx = await api.tx.peaqStorage
-    .getItem(ownerPair.address).signAndSend(ownerPair, (result) => {
-        console.log(`Transaction result: ${JSON.stringify(result)}\n\n`);
-        tx();
-    });
+    const decodeAdressValue = decodeAddress(ownerPair.address, false, 42);
+    console.log(decodeAdressValue.length);
+    const hashedkey = blake2AsHex(decodeAdressValue, 256);
+    const val = await api.query.peaqStorage.itemStore(hashedkey);
+    console.log("our user value", val);
+
+    // var tx = await api.tx.peaqStorage
+    // .getItem(ownerPair.address).signAndSend(ownerPair, (result) => {
+    //     console.log(`Transaction result: ${JSON.stringify(result)}\n\n`);x
+    //     tx();
+    // });
 
     api.disconnect();
     wsp.disconnect();
@@ -113,10 +134,32 @@ async function verifyDataStorage(ownerPair) {
 // creates new decentralized ID based on the name passed
 async function createDID(sdk, ownerPair) {
     // TODO how to chnage the document fields after creating from the readDID function
+
+    console.log("hello");
     const { hash } = await sdk.did.create({
-        name: `did:peaq:${ownerPair.address}`});
-    const didHash = toHexString(hash);
-    return didHash;
+        name: "my-did-name-2",
+        document: {
+            id:`did:peaq:${ownerPair.address}`,
+            controller:`did:peaq:${ownerPair.address}`,
+            verificationmethodsList:[
+               {
+                  id:"265dee4e-f915-43e4-9e22-5346c12fe9ae",
+                  type:0,
+                  controller: `did:peaq:${ownerPair.address}`,
+                  publickeymultibase:"z5Df42mkztLtkksgQuLy4YV6hmhzdjYvDknoxHv1QBkaY12Pg"
+               }
+            ],
+            servicesList:[
+               
+            ],
+            authenticationsList:[
+               "265dee4e-f915-43e4-9e22-5346c12fe9ae"
+            ]
+         }
+    });
+
+    console.log("hello");
+    return hash;
 }
 
 // reads the previously created DID name to retrieve information linked
@@ -124,8 +167,9 @@ async function readDID(sdk, ownerPair) {
    // DEBUGGING NOTES:
    // Must have brackets around name field when reading... brackets are omitted when looking at peaq docs
    const name = `did:peaq:${ownerPair.address}`;
+   const name2 = "my-did-name-2";
     const did = await sdk.did.read({
-        name: name
+        name: name2
     });
     return did;
 }
@@ -172,8 +216,9 @@ async function fetchPermission(sdk, permId, OWNER) {
     return permission;
 }
 
-async function main() {
+const main = async () => {
     const sdk = await createSdkInstance();
+    //const sdk = await createSdkInstance();
     await sdk.connect();
 
     const name = 'myDID';
@@ -183,20 +228,20 @@ async function main() {
     const ownerPair = await generateKeyPair();
 
     try {
-        // const didHash = await createDID(sdk, ownerPair);
-        // console.log(`\nDID hash: ${didHash}\n`);
+        const didHash = await createDID(sdk, ownerPair);
+        console.log(`\nDID hash: ${didHash}\n`);
 
         // const didInfo = await readDID(sdk, ownerPair);
         // console.log(`DID data: \n${JSON.stringify(didInfo)}\n`);
 
-        await dataStorage(ownerPair);
+    //    await dataStorage(ownerPair);
 
-        await verifyDataStorage(ownerPair);
+        // await verifyDataStorage(ownerPair);
 
         // const roleID = await createRole(sdk, roleName);
         // console.log(`Created role Id: ${roleID}\n`);
 
-        // const role = await fetchRole(sdk, roleID, OWNER);
+        // const role = await fetchRole(ssdk, roleID, OWNER);
         // console.log(`Fetched role: ${JSON.stringify(role)}\n`);
 
         // const permId = await createPermission(sdk, permName);
@@ -213,11 +258,12 @@ async function main() {
 
     }
     catch (error) {
-        console.error(error);
+        console.error(`Failed to create SDK instance: ${error}`);
+        throw error;
     } finally {
         await sdk.disconnect();
     }
-}
+};
 
 // code if you want to wait for transaction to be appended before going to next part of code
 
