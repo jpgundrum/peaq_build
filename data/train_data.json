@@ -1,7 +1,7 @@
 {
     "trains": [
       {
-        "id": "T101",
+        "cid": "QmTz3W4C2i8e7VDMeNt6m8EhrNBZEjN6o4e6Zot9gv5TRq",
         "admin": "myemail@gmail.com",
         "name": "Highland Express",
         "currentLocation": "Station 3",
@@ -16,7 +16,7 @@
         ]
       },
       {
-        "id": "T202",
+        "cid": "QmP7tKJP4ZXzSxQYFy5hjNy3jEb8vX7biG1Tx7wjF8BatK",
         "admin": "myemail@gmail.com",
         "name": "City Zephyr",
         "currentLocation": "Station 2",
@@ -31,7 +31,7 @@
         ]
       },
       {
-        "id": "T303",
+        "cid": "QmZTR5bcpFBdLefdZ7FqT5BWFRwj4bagKtHXX1whmZUM5A",
         "admin": "myemail@gmail.com",
         "name": "Mountain Climber",
         "currentLocation": "Station 4",
@@ -46,7 +46,7 @@
         ]
       },
       {
-        "id": "T404",
+        "cid": "QmXnnyB3GCkk1VwhPRD9jd1VvQm6aGPTQ4NqHuRn6Mx2oc",
         "admin": "myemail@gmail.com",
         "name": "Coastal Voyager",
         "currentLocation": "Station 1",
@@ -61,7 +61,7 @@
         ]
       },
       {
-        "id": "T505",
+        "cid": "QmcKfXcq3gMqz9YTKCVMJNRjC4aYzwjeCqRa6xK9izoDbq",
         "admin": "myemail@gmail.com",
         "name": "Night Owl",
         "currentLocation": "En Route between Station 2 and Station 3",

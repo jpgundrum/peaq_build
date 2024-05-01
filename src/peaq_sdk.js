@@ -25,7 +25,8 @@ const AGUNG_BASE_URL = "wss://wsspc1-qa.agung.peaq.network";
 /// TODO ask -> which is better to use arrow or normal declaration functions
 const createSdkInstance = async () => {
     try {
-      const sdkInstance = await Sdk.createInstance({ baseUrl: AGUNG_BASE_URL,
+      const sdkInstance = await Sdk.createInstance({ 
+        baseUrl: AGUNG_BASE_URL,
         seed: MNEMONIC
      });
       return sdkInstance;
@@ -48,7 +49,7 @@ const createSdkInstance = async () => {
 
 async function generateKeyPair() {
     const keyring = new Keyring({ type: "sr25519" });
-    const machineSeed = mnemonicGenerate(); // update to machine?? need funds.
+   // const machineSeed = mnemonicGenerate(); // update to machine?? need funds.
     const ownerPair = keyring.addFromUri(MNEMONIC); // for now using my supplied agung wallet
     return ownerPair;
 }
@@ -69,8 +70,6 @@ async function dataStorage(ownerPair) {
     // Establish a new ApiPromise instance using the peaq mainnet connection URL
     const wsp = new WsProvider(AGUNG_BASE_URL);
     const api = await (await ApiPromise.create({ provider: wsp })).isReady;
-    const test = api.tx.timestamp;
-
     
     const payloadHex = await generateAndSignData(ownerPair);
 
@@ -115,10 +114,10 @@ async function verifyDataStorage(ownerPair) {
 
    // console.log(ownerPair.address);
 
-    const decodeAdressValue = decodeAddress(ownerPair.address, false, 42);
-    console.log(decodeAdressValue.length);
-    const hashedkey = blake2AsHex(decodeAdressValue, 256);
-    const val = await api.query.peaqStorage.itemStore(hashedkey);
+    const decodeAddressValue = decodeAddress(ownerPair.address, false, 42);
+    const hashedKey = blake2AsHex(decodeAddressValue, 256);
+
+    const val = await api.query.peaqStorage.itemStore(hashedKey);
     console.log("our user value", val);
 
     // var tx = await api.tx.peaqStorage
@@ -134,8 +133,6 @@ async function verifyDataStorage(ownerPair) {
 // creates new decentralized ID based on the name passed
 async function createDID(sdk, ownerPair) {
     // TODO how to chnage the document fields after creating from the readDID function
-
-    console.log("hello");
     const { hash } = await sdk.did.create({
         name: "my-did-name-2",
         document: {
@@ -157,8 +154,6 @@ async function createDID(sdk, ownerPair) {
             ]
          }
     });
-
-    console.log("hello");
     return hash;
 }
 
@@ -218,23 +213,47 @@ async function fetchPermission(sdk, permId, OWNER) {
 
 const main = async () => {
     const sdk = await createSdkInstance();
-    //const sdk = await createSdkInstance();
     await sdk.connect();
-
-    const name = 'myDID';
-    const roleName = "myrole";
-    const permName = 'myPermission';
 
     const ownerPair = await generateKeyPair();
 
     try {
-        const didHash = await createDID(sdk, ownerPair);
-        console.log(`\nDID hash: ${didHash}\n`);
+        // const didHash = await createDID(sdk, ownerPair);
+        // console.log(`\nDID hash: ${didHash}\n`);
 
-        // const didInfo = await readDID(sdk, ownerPair);
-        // console.log(`DID data: \n${JSON.stringify(didInfo)}\n`);
+        // how to get user id to not be > 32??
+       //  const didInfo = await readDID(sdk, ownerPair);
 
-    //    await dataStorage(ownerPair);
+       //const address = "0x8c81c81b633fae0cc5713dd9d7ac2ae9fe5d63112b396554c0d8e19b199daf1d";
+
+
+        const address = "5FEw7aWmqcnWDaMcwjKyGtJMjQfqYGxXmDWKVfcpnEPmUM7q";
+        const roles = await sdk.rbac.fetchRoles({
+            owner: address
+        });
+        console.log(roles);
+
+        // const fetched = await sdk.rbac.fetchRole({
+        //     owner: address,
+        //     roleId: roleId,
+        // });
+        // console.log(fetched);
+      
+        // const roleDisable = await sdk.rbac.disableRole({
+        //     roleId: '559758ff-37fb-4d55-a2c2-5f68c296'
+        // });
+
+
+        const groups = await sdk.rbac.fetchGroups({
+            owner: address
+        });
+        console.log(groups);
+        const permissions = await sdk.rbac.fetchPermissions({
+            owner: address
+        });
+        console.log(permissions);
+
+      // await dataStorage(ownerPair);
 
         // await verifyDataStorage(ownerPair);
 
