@@ -30,3 +30,27 @@ Look at current code coverage on codecov for main branch [here](https://app.code
 
 ## Github Actions
 Added .github/workflows/test_api.yml to execute tests and post test results to this github repository each time new code is pushed to main
+
+
+
+## String decode:
+decode simple strings (name and value )that were sent to addAttribute for peaq did
+```js
+
+var tx = await api.tx.peaqDid
+  .addAttribute(OwnerPair.address, "did", "did:peaq:xyz", null).signAndSend(OwnerPair, (result) => {
+    console.log(`Transaction result: ${JSON.stringify(result)}\n\n`);
+    tx();
+  });
+wsp.disconnect();
+api.disconnect();
+
+
+const attributeReadData = await sendTransaction(api, OwnerPair, name);
+
+const entries = attributeReadData[0];
+const nameHex = hexToString(u8aToHex(attributeReadData[0].get('name')));
+const valueHex = hexToString(u8aToHex(attributeReadData[0].get('value')));
+```
+
+serialize to send objects

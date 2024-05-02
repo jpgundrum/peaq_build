@@ -4,7 +4,7 @@ import { Sdk } from "@peaq-network/sdk";
 import { create } from 'ipfs-http-client';  // deploy metadata to ipfs
 import { cryptoWaitReady, blake2AsHex } from "@polkadot/util-crypto";
 import Keyring from "@polkadot/keyring";
-import { stringToU8a, u8aToHex } from "@polkadot/util";
+import { hexToString, hexToU8a, stringToHex, stringToU8a, u8aToHex } from "@polkadot/util";
 import dotenv from 'dotenv';
 
 // replace with api to source train data
@@ -24,6 +24,7 @@ const MACHINE_SEED = process.env.MACHINE_SEED;
 // base urls to make peaq & ipfs network connections
 const AGUNG_BASE_URL = "wss://wsspc1-qa.agung.peaq.network";
 const IPFS_GATEWAY = ""; // TODO update
+const DID_DOC_PATH = 'data/external_did_store.json';
 
 // TODO what should be stored off-chain? Currently have the json file, but may want to add DID's??
 async function storeOffChain(train_data) {
@@ -101,7 +102,7 @@ function sendTransaction(api, OwnerPair, name) {
   });
 }
 
-async function createOwnerDID(sdk)  {
+async function createOwner(sdk)  {
     // TODO read train data
     const jsonData = await readJsonData();
     const peaqIdMapping = {};
@@ -118,28 +119,29 @@ async function createOwnerDID(sdk)  {
     const TrainPair = train_keyring.addFromUri(MACHINE_SEED);         // key pair created using the particular trains's seed phrase (have secret list of all train seeds somewhere as the owner)
 
 
-
+  // add serviceEndpoint to device -> what should it be? Where does signature go?
+  // what to do for signature for first did document?
     const did_name = `did:peaq:${OwnerPair.address}`;
     const did_document = {
       "document":{
         "id":`did:peaq:${OwnerPair.address}`,
         "controller":`did:peaq:${OwnerPair.address}`,
-        "verificationmethodsList":[
+        "verificationMethod":[
           {
             "id": "#pk1",
             "type": "Sr25519VerificationKey2020",
-            "controller": `did:${OwnerPair.address}`,
+            "controller": `did:peaq:${OwnerPair.address}`,
             "publicKeyMultibase": `z${OwnerPair.address}` 
           }
         ],
-        "owner_signature": "genesis",
-        "servicesList":[
+        "signature": "genesis",
+        "service":[
           {
             "id": "#device",
             "type": "device",
             "controller":`did:peaq:${OwnerPair.address}`,
-            "devicePublicAddress": `${TrainPair.address}`,
-            "depin_signature": "genesis",
+            "devicePublicAddress": `did:peaq:${TrainPair.address}`,
+            "serviceEndpoint": "what_goes_here",
           },
           {
             "id": "#metadata",
@@ -147,12 +149,14 @@ async function createOwnerDID(sdk)  {
             "serviceEndpoint": `ipfs/${IPFS_GATEWAY}`
           },
         ],
-        "authenticationsList":[
+        "authentication":[
           "#pk1"
         ]
     }
   }
 
+  // use encryption logic for signing the data cid to create a hash to goto peaqStorage (stores hash are verified data)
+  // item_type(cid) -> 
   // obtain hash and add signature to chain
   const message = stringToU8a(did_document);
   const hashed_did = blake2AsHex(message);
@@ -171,8 +175,8 @@ async function createOwnerDID(sdk)  {
 
   // // create and verify using javascript pallets
 
-  const wsp = new WsProvider(AGUNG_BASE_URL);
-  const api = await (await ApiPromise.create({ provider: wsp })).isReady;
+  // const wsp = new WsProvider(AGUNG_BASE_URL);
+  // const api = await (await ApiPromise.create({ provider: wsp })).isReady;
 
   const doc = stringToU8a(did_document);
   const name = "did_train";
@@ -301,48 +305,281 @@ async function createOwnerDID(sdk)  {
     
     return;
 }
+
+async function readDidOffChain() {
+    const did_document = await fs.readFile(DID_DOC_PATH, 'utf8');
+    const did_json = JSON.parse(did_document)
+    // Check the last element of the main array
+    const last_document = did_json[did_json.length - 1];
+
+    // Check if the last element is an array and retrieve the last object from it if true
+    if (Array.isArray(last_document)) {
+      return last_document[last_document.length - 1];
+    }
+  
+    // If the last element is not an array, return it directly
+    return last_document;
+}
+
+async function appendDataOffChain(did_document) {
+  let did_data = await fs.readFile(DID_DOC_PATH, 'utf8');
+  let did_documents = JSON.parse(did_data);
+
+  // Compute hash of the last document in the file
+  const lastDoc = did_documents[did_documents.length - 1];
+
+  // if lastDoc doesn't have a signature, then it is genesis
+  // so add the signature of that to the current did_document (already done)
+
+  // Append new data
+  did_documents.push(did_document);
+
+  // Write the updated documents back to the file
+  await fs.writeFile(DID_DOC_PATH, JSON.stringify(did_documents, null, 2), 'utf8');
+}
+
+async function storeDidOffChain(did_document) {
+  // Serialize the object to a JSON string
+  const jsonData = JSON.stringify(did_document, null, 2); // The '2' adds indentation for better readability
+  await fs.writeFile(DID_DOC_PATH, jsonData, 'utf8');
+
+}
+
+async function updateDidStorage(OwnerPair, hashed_did) {
+  // record the did_document to storage for the first time with the generated hash of the initial did_document
+  const did_document = []
+  did_document.push({
+    "document":{
+      "id":`did:peaq:${OwnerPair.address}`,
+      "controller":`did:peaq:${OwnerPair.address}`,
+      "verificationMethod":[
+        {
+          "id": "#pk1",
+          "type": "Sr25519VerificationKey2020",
+          "controller": `did:peaq:${OwnerPair.address}`,
+        }
+      ],
+      "signature": {
+        "type": "Sr25519VerificationKey2020",
+        "issuer": `did:peaq:${OwnerPair.address}`,
+        "prev_hash": `${hashed_did}`
+      },
+    }
+  })
+  await appendDataOffChain(did_document);
+}
+
+
+
+
+
+
+/**
+ * Use off-chain storage to store all did_documents
+ * 
+ * 1. create id & controller did_document to generate first hash
+ * 2. store hash in did_document off-chain
+ * 3. send signature to store on-chain with did as key
+ * 4. read off-chain hash to verify that the read signature is valid
+ */
+async function createOwnerDID() {
+  // Create a keypair of the owner of the dApp, aka the city metro system administrator
+  await cryptoWaitReady();                                   // when is this needed
+  const owner_keyring = new Keyring({ type: "sr25519" });         // sr25519 key pair used to sign and verify transactions
+  const OwnerPair = owner_keyring.addFromUri(OWNER_SEED);
+
+  const did = `did:peaq:${OwnerPair.address}`;
+  const did_document = []
+  did_document.push({
+    "document":{
+      "id":`did:peaq:${OwnerPair.address}`,
+      "controller":`did:peaq:${OwnerPair.address}`,
+    }
+  })
+  await storeDidOffChain(did_document);
+
+  const message = stringToU8a(JSON.stringify(did_document));
+  const hashed_did = blake2AsHex(message);    // hash the did document
+
+  
+  // ***** When do I update the did_document hash that now includes the verificationMethod and signature fields? ******
+  await updateDidStorage(OwnerPair, hashed_did); // store hash off-chain by updated prev did_document to include hash
+  // Update Systematically: Changes should trigger a systematic update
+  // process that recalculates hashes and re-signs the document, updating 
+  // the prev_hash to maintain a correct and verifiable document history.
+
+
+
+  const signed = OwnerPair.sign(hashed_did);  // issuer signs hash
+  const signature = u8aToHex(signed);         // ready for on-chain storage
+
+  const wsp = new WsProvider(AGUNG_BASE_URL);
+  const api = await (await ApiPromise.create({ provider: wsp })).isReady;
+
+
+  // // store the Owner DID hash identifier on chain as id: hash -> did:peaq:${OwnerPair.address}: signature
+  // // implement waiting for transaction to complete
+  // //
+  // // use update instead of add if did_doc prev added
+  // var tx = await api.tx.peaqDid
+  //   .updateAttribute(OwnerPair.address, did, signature, null).signAndSend(OwnerPair, (result) => {
+  //     console.log(`Transaction result: ${JSON.stringify(result)}\n\n`);
+  //     tx();
+  //   });
+
+  //  // How to use validFor (block number) instead of null?
+  // wsp.disconnect();
+  // api.disconnect();
+
+
+
+  // try {
+  //   const attributeReadData = await sendTransaction(api, OwnerPair, did);
+  //   wsp.disconnect();
+  //   api.disconnect();
+  //   const entries = attributeReadData[0];
+
+  //   // const nameHex = hexToString(u8aToHex(attributeReadData[0].get('name')));
+  //   // const valueHex = hexToString(u8aToHex(attributeReadData[0].get('value')));
+
+  //   // console.log("verificationMethod Name", nameHex);
+  //   // console.log("verificationMethod value", valueHex);
+
+
+  //   // prove that the TrainPair created the did
+  //   // compare obtained_signature to the off-chain stored hash in the did_document
+  //   const obtained_signature = u8aToHex(attributeReadData[0].get('value'));
+
+  //   // obtain hash to prove that it comes from the owner
+  //   const did_doc = await readDidOffChain(); // check the most recently added block
+
+  //   const isValid = OwnerPair.verify(did_doc.document.signature.prev_hash, obtained_signature, OwnerPair.publicKey);
+  //   console.log(isValid);
+
+  // } catch (error) {
+  //   console.error('Error during transaction:', error);
+  // }
+
+
+  // solidify into a function
+  //
+  // contruct new did_document that contains the previous hash
+  const did_doc = await readDidOffChain();
+
+  const message2 = stringToU8a(JSON.stringify(did_doc)); 
+  const hashed_did2 = blake2AsHex(message2);    // hash the did document
+  await updateDidStorage(OwnerPair, hashed_did2); // store hash off-chain by updated prev did_document to include hash
+  const signed2 = OwnerPair.sign(hashed_did2);  // issuer signs hash
+  const signature2 = u8aToHex(signed2);         // ready for on-chain storage
+
+    // var tx = await api.tx.peaqDid
+    // .updateAttribute(OwnerPair.address, did, signature2, null).signAndSend(OwnerPair, (result) => {
+    //   console.log(`Transaction result: ${JSON.stringify(result)}\n\n`);
+    //   tx();
+    // });
+
+  //  // How to use validFor (block number) instead of null?
+  // wsp.disconnect();
+  // api.disconnect();
+
+  try {
+    const attributeReadData = await sendTransaction(api, OwnerPair, did);
+    wsp.disconnect();
+    api.disconnect();
+    const entries = attributeReadData[0];
+
+    // const nameHex = hexToString(u8aToHex(attributeReadData[0].get('name')));
+    // const valueHex = hexToString(u8aToHex(attributeReadData[0].get('value')));
+
+    // console.log("verificationMethod Name", nameHex);
+    // console.log("verificationMethod value", valueHex);
+
+
+    // prove that the TrainPair created the did
+    // compare obtained_signature to the off-chain stored hash in the did_document
+    const obtained_signature = u8aToHex(attributeReadData[0].get('value'));
+
+    // obtain hash to prove that it comes from the owner
+    const did_doc = await readDidOffChain(); // check the most recently added block
+
+    const isValid = OwnerPair.verify(did_doc.document.signature.prev_hash, obtained_signature, OwnerPair.publicKey);
+    console.log(isValid);
+
+  } catch (error) {
+    console.error('Error during transaction:', error);
+  }
+
+  return
+}
+
 /**
  * creates and verifies a metro system
  * 
+ * Have 2nd process be reading the ipfs server every x time
  * (add transfer capabilities for tokens and tickets given to customers and verify (based on their wallet) they can be on the system)
+ * mock faulty data to ensure it isn't validated
  */
 async function main() {
     // initialize sdk instance based on 
-    const sdk = await createSdkInstance();
-    await sdk.connect();
-    console.log("hellow worl");
+    // const sdk = await createSdkInstance();
+    // await sdk.connect();
+    // console.log("hellow worl");
 
 
     // think of special first step to initialize items
     try {
-        // create owner did
-        await createOwnerDID(sdk);
-
-        // create known machine ids (when does ipfs cid come into play? how to add more trains in time?)
-        // mock create in ipfs
-        let cid = await createTrainDID();
 
 
-        // should be a loop constantly checking data signatures. If one isn't verified log as error.
-        let verified = true;
 
-        while(verified) {
-          // wait for data to be added to ipfs
+        // create owner did that must sign somewhere (peaqStorage?)
+        await createOwnerDID(); // creates a signature on-chain for owner's did_document that can be validated
+        // TODO add await verifyOwnerDID():
 
-          // read fake train data from json (would be coming from machines themselves)
-          // mock read in ipfs from json created based on previous hash
-          const trainData = await readJsonData(cid);
+        // create known machine ids (when does ipfs cid come into play? -> cid is based on did /// how to add more trains in time? -> owner has privileges)
+        // mock create in ipfs thru json train data
 
 
-          // add hash of train data to peaq storage
-          const signature = await storeDataHash(trainData); // build based on cid or entire object
+        // when creating machine ids use did:peaq generated by keyring for the trains to write to train json (mock ipfs) as cid
+        // Have these trains signed by the owner 
+        // - based on hashing owner's
+        //
+        // - create a key_ring to derive a public address that will be used for did/cid -> train identifier
+        //    - map keyring object to the associated hash
+        // - add a signature from the did:peaq(cid) just created to validate when we read data
+        // - upload cid to the train that has that signature that was built from it (cid is train public key)
+        //
+        // Return back a list of hashes that will be used to validate
+        // const keyring_hash = {}
+        // keyring_hash = await createTrainDID();
 
-          // read storage to get hash and verify data is coming from the known train based on the cid
-          verified = await verifySignature(signature);
 
-          // if true create new cid based on that signature and post to ipfs
-          cid = await updateTrainDID(signature);
-        }
+        // // should be a loop constantly checking data signatures. If one isn't verified log as error.
+        // let verified = true;
+
+        // while(verified) {
+        //   // wait for data to be added to ipfs
+
+        //   // read fake train data from json (would be coming from machines themselves)
+        //   // mock read in ipfs from json created based on previous hash
+        //   //
+        //   // return back cid and their signatures to validate against the train and the 
+        //   const trainCidData = await readJTrainData();
+
+        //   // create a proof validating the data came from where it was suppose to
+        //   // - add cid based on a signed hash
+        //   // - read cid back and verify the read signature matches the known Train.publicAddress
+        //   await validateTrainData(hashes);
+
+
+        //   // add hash of train data to peaq storage
+        //   const signature = await storeDataHash(trainData); // build based on cid or entire object
+
+        //   // read storage to get hash and verify data is coming from the known train based on the cid
+        //   verified = await verifySignature(signature);
+
+        //   // if true create new cid based on that signature and post to ipfs
+        //   cid = await updateTrainDID(signature);
+        // }
         // should continue to verify indefinitely
         
 // TODO use a proper encryption technique for the purposes -> ask Iredia/Jona
@@ -351,7 +588,7 @@ async function main() {
     catch (error) {
         console.error(error);
     } finally {
-        await sdk.disconnect();
+        console.log("Finished Execution");
     }
 
 }
@@ -374,11 +611,7 @@ function toHexString(bytes) {
     }, '');
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
-// export {main}
+export {main}
 
 
 
@@ -419,3 +652,42 @@ main().catch((error) => {
     // 
     // first did don't have service list, next add the depin to the service list and use both signatures
     // add item for genesis, update for the rest
+
+
+
+
+    // const did_document = {
+    //   "document":{
+    //     "id":`did:peaq:${OwnerPair.address}`,
+    //     "controller":`did:peaq:${OwnerPair.address}`,
+    //     "verificationMethod":[
+    //       {
+    //         "id": "#pk1",
+    //         "type": "Sr25519VerificationKey2020",
+    //         "controller": `did:peaq:${OwnerPair.address}`,
+    //       }
+    //     ],
+    //     "signature": {
+    //       "type:": "Sr25519VerificationKey2020",
+    //       "issuer": `did:peaq:${OwnerPair.address}`,
+    //       "hash": `${signature}`
+    //     },
+    //     "service":[
+    //       {
+    //         "id": "#device",
+    //         "type": "device",
+    //         "controller":`did:peaq:${OwnerPair.address}`,
+    //         "devicePublicAddress": `did:peaq:${TrainPair.address}`,
+    //         "serviceEndpoint": "train_data_retrieval_endpoint",
+    //       },
+    //       {
+    //         "id": "#metadata",
+    //         "type": "ipfs_metadata",
+    //         "serviceEndpoint": `ipfs/${IPFS_GATEWAY}`
+    //       },
+    //     ],
+    //     "authentication":[
+    //       "#pk1"
+    //     ]
+    //   }
+    // }
