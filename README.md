@@ -52,9 +52,3 @@ const entries = attributeReadData[0];
 const nameHex = hexToString(u8aToHex(attributeReadData[0].get('name')));
 const valueHex = hexToString(u8aToHex(attributeReadData[0].get('value')));
 ```
-
-serialize to send objects
-
-
-
-signature: 0x508bb1d23cffadb6136482a9f767ca871a3990cba030e5875c60391e1c2bd3579a3877c86145859064d5b6e91b7840557681eea16ef6c11a534b3cbc693ae18e

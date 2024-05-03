@@ -1,17 +1,17 @@
 // For an environment that supports ECMAScript modules (ESM)
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { Sdk } from "@peaq-network/sdk";
 import { create } from 'ipfs-http-client';  // deploy metadata to ipfs
 import { cryptoWaitReady, blake2AsHex, xxhashAsHex, blake2AsU8a, signatureVerify } from "@polkadot/util-crypto";
 import { Keyring, decodeAddress } from "@polkadot/keyring";
-import { hexToString, hexToU8a, stringToHex, stringToU8a, u8aToHex, u8aConcat, hexStripPrefix, u8aToU8a, u8aToString } from "@polkadot/util";
+import { hexToString, hexToU8a, stringToU8a, u8aToHex, u8aConcat, hexStripPrefix, u8aToU8a } from "@polkadot/util";
 import dotenv from 'dotenv';
 
 // replace with api to source train data
 import fs from 'fs/promises'; // Using the promise-based version of the fs module
 import path from 'path';
 import { fileURLToPath } from 'url';
-// obtain path for hard-coded train data (future -> api data source?)
+
+// obtain path for hard-coded train data (future -> api data source.)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const dataPath = path.join(__dirname, '..', 'data', 'train_data.json');
@@ -128,8 +128,8 @@ async function updateDidStorageSr25519(OwnerPair, cid, hashed_did) {
  * 
  * 1. create id & controller did_document to generate first hash
  * 2. store hash in did_document off-chain
- * 3. send signature to store on-chain with did as key
- * 4. read off-chain hash to verify that the read signature is valid
+ * 3. send signature to store on-chain with cid as key
+ * 4. update off-chain did_document to include hash to verify that the peaqStorage signature is valid
  */
 async function createOwnerDID() {
   // Create a keypair of the owner of the dApp, aka the city metro system administrator based on their seed
@@ -149,7 +149,6 @@ async function createOwnerDID() {
 
   // store the did_document off-chain and get a cid back
   let cid = await storeDidOffChain(did_document);
-
 
   // hash cid and update did_document off-chain to include this hash
   const cid_message = stringToU8a(cid);
@@ -176,11 +175,10 @@ async function createOwnerDID() {
 
 async function verifyOwnerDID() {
   // create providers to connect to agung
-
   const wsp = new WsProvider(AGUNG_BASE_URL);
   const api = await (await ApiPromise.create({ provider: wsp })).isReady;
 
-  // verify using your personal keypair
+  // sign transaction using your personal keypair
   const test_keyring = new Keyring({ type: "sr25519" }); 
   const TestPair = test_keyring.addFromUri(MACHINE_SEED);
 
@@ -220,24 +218,24 @@ async function verifyOwnerDID() {
   const val = await api.rpc.state.queryStorageAt([storageKey]);
 
   // convert hex to u8a
-  var test = val[0];
-  var bytes = hexToU8a("" + test);
+  var bytes = hexToU8a("" + val[0]);
 
-  // remove first 2 bytes -> hacky way
+  // The first two bytes are 1... for whatever reason
+  // HOW TO: remove first 2 bytes -> hacky way, not good to hardcode
   if (bytes[0] === 0x01 && bytes[1] === 0x01) {
     bytes = bytes.slice(2);  // Remove the first 2 bytes byte if it's an added prefix
     var signature = u8aToHex(bytes);
   }
 
-    // read cid to see did_document to get hash
-    const hash = await readHashOffChain(cid); // check the most recently added block
+  // read cid to see did_document to get hash
+  const hash = await readHashOffChain(cid); // check the most recently added block
 
-   // verify hash and signature
-   var verifyResult = signatureVerify(hash, signature, owner_public);
-   console.log(verifyResult.isValid);
+  // verify hash and signature
+  var verifyResult = signatureVerify(hash, signature, owner_public);
+  console.log("\nSignature Verify Result: ", verifyResult.isValid, "\n");
 
-   wsp.disconnect();
-   api.disconnect();
+  wsp.disconnect();
+  api.disconnect();
   }
 /**
  * creates and verifies a metro system
@@ -247,13 +245,17 @@ async function verifyOwnerDID() {
  * mock faulty data to ensure it isn't validated
  */
 async function main() {
-
   try {
     await createOwnerDID();     // creates a signature on-chain for owner's did_document that can be validated
     await verifyOwnerDID();     // verifies signature from peaqStorage with cid read from peaqDid based on public address. Obtain hash in off-chain storage of did_document based on cid as well
+  }
+  catch (error) {
+      console.error(error);
+  }
 
 
-      // TODO below ... 
+
+      // TODO below ...
 
         // create known machine ids (when does ipfs cid come into play? -> cid is based on did /// how to add more trains in time? -> owner has privileges)
         // mock create in ipfs thru json train data
@@ -302,14 +304,6 @@ async function main() {
         // }
         // should continue to verify indefinitely
         
-
-    }
-    catch (error) {
-        console.error(error);
-    } finally {
-        console.log("Finished Execution");
-    }
-
 }
 
 // off-chain operations
