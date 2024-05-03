@@ -1,48 +1,24 @@
 [
   {
-    "document": {
-      "id": "did:peaq:5FEw7aWmqcnWDaMcwjKyGtJMjQfqYGxXmDWKVfcpnEPmUM7q",
-      "controller": "did:peaq:5FEw7aWmqcnWDaMcwjKyGtJMjQfqYGxXmDWKVfcpnEPmUM7q"
-    }
-  },
-  [
-    {
-      "document": {
-        "id": "did:peaq:5FEw7aWmqcnWDaMcwjKyGtJMjQfqYGxXmDWKVfcpnEPmUM7q",
-        "controller": "did:peaq:5FEw7aWmqcnWDaMcwjKyGtJMjQfqYGxXmDWKVfcpnEPmUM7q",
-        "verificationMethod": [
-          {
-            "id": "#pk1",
+    "a01b5446427930f28b00b8f7a23619db063f23ee9f116ec6c32314f3dbd2b95b": [
+      {
+        "document": {
+          "id": "did:peaq:5FEw7aWmqcnWDaMcwjKyGtJMjQfqYGxXmDWKVfcpnEPmUM7q",
+          "controller": "did:peaq:5FEw7aWmqcnWDaMcwjKyGtJMjQfqYGxXmDWKVfcpnEPmUM7q",
+          "verificationMethod": [
+            {
+              "id": "#pk1",
+              "type": "Sr25519VerificationKey2020",
+              "controller": "did:peaq:5FEw7aWmqcnWDaMcwjKyGtJMjQfqYGxXmDWKVfcpnEPmUM7q"
+            }
+          ],
+          "signature": {
             "type": "Sr25519VerificationKey2020",
-            "controller": "did:peaq:5FEw7aWmqcnWDaMcwjKyGtJMjQfqYGxXmDWKVfcpnEPmUM7q"
+            "issuer": "did:peaq:5FEw7aWmqcnWDaMcwjKyGtJMjQfqYGxXmDWKVfcpnEPmUM7q",
+            "prev_hash": "0x42206548cfe79e4f6b0196238fc633c3509bcb1a775db0e35ed1350fef644a73"
           }
-        ],
-        "signature": {
-          "type": "Sr25519VerificationKey2020",
-          "issuer": "did:peaq:5FEw7aWmqcnWDaMcwjKyGtJMjQfqYGxXmDWKVfcpnEPmUM7q",
-          "prev_hash": "0xf5d39f66dd3a2557aaa94da79de8d410abfd9cc9001e70cf73abe78b2c4e631c"
         }
       }
-    }
-  ],
-  [
-    {
-      "document": {
-        "id": "did:peaq:5FEw7aWmqcnWDaMcwjKyGtJMjQfqYGxXmDWKVfcpnEPmUM7q",
-        "controller": "did:peaq:5FEw7aWmqcnWDaMcwjKyGtJMjQfqYGxXmDWKVfcpnEPmUM7q",
-        "verificationMethod": [
-          {
-            "id": "#pk1",
-            "type": "Sr25519VerificationKey2020",
-            "controller": "did:peaq:5FEw7aWmqcnWDaMcwjKyGtJMjQfqYGxXmDWKVfcpnEPmUM7q"
-          }
-        ],
-        "signature": {
-          "type": "Sr25519VerificationKey2020",
-          "issuer": "did:peaq:5FEw7aWmqcnWDaMcwjKyGtJMjQfqYGxXmDWKVfcpnEPmUM7q",
-          "prev_hash": "0xde4a9d06c5bb0015c88428bd71cb71419d014b441ef8da151fa6b8a0112a47ee"
-        }
-      }
-    }
-  ]
+    ]
+  }
 ]

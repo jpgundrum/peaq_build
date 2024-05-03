@@ -214,8 +214,17 @@ async function fetchPermission(sdk, permId, OWNER) {
 const main = async () => {
     const sdk = await createSdkInstance();
     await sdk.connect();
+    const did_hash = await sdk.did.create({
+        name: "MyNewDID"
+    });
+    const read = await sdk.did.read({
+        name: "MyNewDID"
+    });
+    console.log(read);
+    
 
-    const ownerPair = await generateKeyPair();
+
+    // const ownerPair = await generateKeyPair();
 
     try {
         // const didHash = await createDID(sdk, ownerPair);
@@ -227,11 +236,11 @@ const main = async () => {
        //const address = "0x8c81c81b633fae0cc5713dd9d7ac2ae9fe5d63112b396554c0d8e19b199daf1d";
 
 
-        const address = "5FEw7aWmqcnWDaMcwjKyGtJMjQfqYGxXmDWKVfcpnEPmUM7q";
-        const roles = await sdk.rbac.fetchRoles({
-            owner: address
-        });
-        console.log(roles);
+        // const address = "5FEw7aWmqcnWDaMcwjKyGtJMjQfqYGxXmDWKVfcpnEPmUM7q";
+        // const roles = await sdk.rbac.fetchRoles({
+        //     owner: address
+        // });
+        // console.log(roles);
 
         // const fetched = await sdk.rbac.fetchRole({
         //     owner: address,
@@ -244,14 +253,14 @@ const main = async () => {
         // });
 
 
-        const groups = await sdk.rbac.fetchGroups({
-            owner: address
-        });
-        console.log(groups);
-        const permissions = await sdk.rbac.fetchPermissions({
-            owner: address
-        });
-        console.log(permissions);
+        // const groups = await sdk.rbac.fetchGroups({
+        //     owner: address
+        // });
+        // console.log(groups);
+        // const permissions = await sdk.rbac.fetchPermissions({
+        //     owner: address
+        // });
+        // console.log(permissions);
 
       // await dataStorage(ownerPair);
 
