@@ -1,21 +1,21 @@
 [
   {
-    "a01b5446427930f28b00b8f7a23619db063f23ee9f116ec6c32314f3dbd2b95b": [
+    "f7ef05e1379d8ee5cc0676a048515772d52d6e9d227c12894d9add8e17ea7579": [
       {
         "document": {
-          "id": "did:peaq:5FEw7aWmqcnWDaMcwjKyGtJMjQfqYGxXmDWKVfcpnEPmUM7q",
-          "controller": "did:peaq:5FEw7aWmqcnWDaMcwjKyGtJMjQfqYGxXmDWKVfcpnEPmUM7q",
+          "id": "did:peaq:5Df42mkztLtkksgQuLy4YV6hmhzdjYvDknoxHv1QBkaY12Pg",
+          "controller": "did:peaq:5Df42mkztLtkksgQuLy4YV6hmhzdjYvDknoxHv1QBkaY12Pg",
           "verificationMethod": [
             {
               "id": "#pk1",
               "type": "Sr25519VerificationKey2020",
-              "controller": "did:peaq:5FEw7aWmqcnWDaMcwjKyGtJMjQfqYGxXmDWKVfcpnEPmUM7q"
+              "controller": "did:peaq:5Df42mkztLtkksgQuLy4YV6hmhzdjYvDknoxHv1QBkaY12Pg"
             }
           ],
           "signature": {
             "type": "Sr25519VerificationKey2020",
-            "issuer": "did:peaq:5FEw7aWmqcnWDaMcwjKyGtJMjQfqYGxXmDWKVfcpnEPmUM7q",
-            "prev_hash": "0x42206548cfe79e4f6b0196238fc633c3509bcb1a775db0e35ed1350fef644a73"
+            "issuer": "did:peaq:5Df42mkztLtkksgQuLy4YV6hmhzdjYvDknoxHv1QBkaY12Pg",
+            "prev_hash": "0xc9fea1b24d5dcfd4696b31c55bdab2b4ae6a74b3f46d786df8f4321e983f1d82"
           }
         }
       }

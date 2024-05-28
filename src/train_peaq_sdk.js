@@ -1,9 +1,12 @@
 // For an environment that supports ECMAScript modules (ESM)
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { create } from 'ipfs-http-client';  // deploy metadata to ipfs
+import { CID }  from 'multiformats/cid';
+import { base58btc } from  'multiformats/bases/base58';
+
 import { cryptoWaitReady, blake2AsHex, xxhashAsHex, blake2AsU8a, signatureVerify } from "@polkadot/util-crypto";
 import { Keyring, decodeAddress } from "@polkadot/keyring";
-import { hexToString, hexToU8a, stringToU8a, u8aToHex, u8aConcat, hexStripPrefix, u8aToU8a } from "@polkadot/util";
+import { hexToString, hexToU8a, stringToU8a, u8aToHex, u8aConcat, hexStripPrefix, u8aToU8a, stringToHex } from "@polkadot/util";
 import dotenv from 'dotenv';
 
 // replace with api to source train data
@@ -16,10 +19,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const dataPath = path.join(__dirname, '..', 'data', 'train_data.json');
 
+// Connect to the local IPFS node or an IPFS gateway
+const ipfs = create({ url: 'http://localhost:5001' });
+
 // env vars
 dotenv.config();
 const OWNER_SEED = process.env.MNEMONIC;
-const MACHINE_SEED = process.env.MACHINE_SEED;
+const MACHINE_SEED = process.env.MNEMONIC; // replace with machine see once I get my seed phrase from madison
 
 // base urls to make peaq & ipfs network connections
 const AGUNG_BASE_URL = "wss://wsspc1-qa.agung.peaq.network";
@@ -69,6 +75,8 @@ function sendWriteTransaction(api, method, OwnerPair, cid, did, signature) {
   if (method == "updateAttribute") {
     return new Promise((resolve, reject) => {
       api.tx.peaqDid.updateAttribute(OwnerPair.address, did, cid, null).signAndSend(OwnerPair, ({ status, events }) => {
+
+        // group into callable method
             if (status.isFinalized) {
             console.log(`Transaction finalized at blockHash ${status.asFinalized}`);
               resolve(); // Resolve the Promise as there are no events
@@ -79,11 +87,13 @@ function sendWriteTransaction(api, method, OwnerPair, cid, did, signature) {
           console.log(`Transaction failed: ${error.message}`);
           reject(error); // Reject the Promise if there's an error
         });
+
+
     });
 
   } else if (method == "updateItem") {
       return new Promise((resolve, reject) => {
-        api.tx.peaqStorage.updateItem(cid, signature).signAndSend(OwnerPair, ({ status, events }) => {
+        api.tx.peaqStorage.addItem(cid, signature).signAndSend(OwnerPair, ({ status, events }) => {
               if (status.isFinalized) {
               console.log(`Transaction finalized at blockHash ${status.asFinalized}`);
                 resolve(); // Resolve the Promise as there are no events
@@ -98,7 +108,7 @@ function sendWriteTransaction(api, method, OwnerPair, cid, did, signature) {
     }
 }
 
-async function updateDidStorageSr25519(OwnerPair, cid, hashed_did) {
+async function updateDidStorageSr25519(OwnerPair, hashed_did) {
   // record the did_document to storage for the first time with the generated hash of the initial did_document
   const did_document = []
   did_document.push({
@@ -115,11 +125,11 @@ async function updateDidStorageSr25519(OwnerPair, cid, hashed_did) {
       "signature": {
         "type": "Sr25519VerificationKey2020",
         "issuer": `did:peaq:${OwnerPair.address}`,
-        "prev_hash": `${hashed_did}`
+        "hash": `${hashed_did}`
       },
     }
   })
-  await appendDataOffChain(cid, did_document);
+  return did_document;
 }
 
 
@@ -139,7 +149,7 @@ async function createOwnerDID() {
 
   // Create initial did_document based on the Owner address
   const did = `did:peaq:${OwnerPair.address}`;
-  const did_document = []
+  let did_document = []
   did_document.push({
     "document":{
       "id":`${did}`,
@@ -147,27 +157,35 @@ async function createOwnerDID() {
     }
   })
 
-  // store the did_document off-chain and get a cid back
-  let cid = await storeDidOffChain(did_document);
 
   // hash cid and update did_document off-chain to include this hash
-  const cid_message = stringToU8a(cid);
-  const hashed_cid = blake2AsHex(cid_message);    // hash the cid
-  await updateDidStorageSr25519(OwnerPair, cid, hashed_cid); // at hash at that cid
+  const did_bytes = stringToU8a(JSON.stringify(did_document));
+  const hashed_did = blake2AsHex(did_bytes);    // hash the cid
+  did_document = await updateDidStorageSr25519(OwnerPair, hashed_did); // at hash at that cid
   
   // sign hashed_cid using Owner's private key
-  const signed = OwnerPair.sign(hashed_cid);  // issuer signs hash
+  const signed = OwnerPair.sign(hashed_did);  // issuer signs hash
   const signature = u8aToHex(signed);         // ready for on-chain storage
+
+  // store did_document off-chain and get a cid back
+  const { cid } = await ipfs.add(JSON.stringify(did_document));
+  let cidString = cid.toString();
 
   // create providers to connect to agung
   const wsp = new WsProvider(AGUNG_BASE_URL);
   const api = await (await ApiPromise.create({ provider: wsp })).isReady;
 
-  // Store owner's cid on-chain using peaq.addAttribute(did: cid)
-  await sendWriteTransaction(api, "updateAttribute", OwnerPair, cid, did, null);
+  // ***TODO***
+  // - update so the did_document hash's is stored on-chain
+  // - create mapping for did_document hash to stored cid to read from peaqStorage
 
+
+  // Store owner's cid on-chain using peaq.addAttribute(did: cid)
+ await sendWriteTransaction(api, "updateAttribute", OwnerPair, hashed_did, did, null);
+
+  
   // Store owner's signature of cid on-chain using peaq.peaqStorage(cid: signature)
-  await sendWriteTransaction(api, "updateItem", OwnerPair, cid, null, signature);
+ await sendWriteTransaction(api, "updateItem", OwnerPair, cidString, null, signature);
 
   wsp.disconnect();
   api.disconnect();
@@ -183,55 +201,55 @@ async function verifyOwnerDID() {
   const TestPair = test_keyring.addFromUri(MACHINE_SEED);
 
   // HARD-CODED FOR TESTING: get owner public key off-chain storage? -> how to get
-  const owner_public = "5FEw7aWmqcnWDaMcwjKyGtJMjQfqYGxXmDWKVfcpnEPmUM7q";
-  const did = "did:peaq:5FEw7aWmqcnWDaMcwjKyGtJMjQfqYGxXmDWKVfcpnEPmUM7q";
-  var cid = "";
-  // var cid = "a01b5446427930f28b00b8f7a23619db063f23ee9f116ec6c32314f3dbd2b95b";
+  const owner_public = "5Df42mkztLtkksgQuLy4YV6hmhzdjYvDknoxHv1QBkaY12Pg"; // need to change back to make sure it uses the correct owner public key
+  const did = "did:peaq:5Df42mkztLtkksgQuLy4YV6hmhzdjYvDknoxHv1QBkaY12Pg";
+  var hashed_did = "";
+  var cid = "QmXTV56jaJ6B8EXVRnEDYxuy52RbZjgyXgfFKijy4mJp9z";
+
 
   // readAttribute(did) from known public key to get cid
   try {
+
+    // **TODO** how can I read the owner's public key? Will this be provided somehow?
     const attributeReadData = await sendReadTransaction(api, "readAttribute", owner_public, did, TestPair);
 
-    // read cid from the did readAttribute function to get signature from peaq storage
-    cid = hexToString(u8aToHex(attributeReadData[0].get('value')));
+    // read did_document hash used in validation, can also get the owner
+
+    ////// MAYBE REMOVE COMMENT: read cid from the did readAttribute function to get signature from peaq storage
+    hashed_did = u8aToHex(attributeReadData[0].get('value'));
 
   } catch (error) {
     console.error('Error during transaction:', error);
   }
 
-  // generate the storage key to get signature
-  let moduleHash = "";
-  let storageHash = "";
-  let keyHash = "";
-  var key1 = u8aToU8a(cid);
-  var decodedAddress = decodeAddress(owner_public, false, 42);
-  var key = u8aConcat(decodedAddress, key1);
+  // // read mapping from obtained hash to get the cid
+  //   for await (const chunk of ipfs.cat(cid)) {
+  //     retrievedData.push(chunk);
+  // }
 
-  moduleHash = xxhashAsHex("PeaqStorage", 128);
-  storageHash = xxhashAsHex("ItemStore", 128);
-  keyHash = blake2AsHex(key, 256);
-  let keyHashBytes = hexToU8a(keyHash);
-  let keyHashConcat = u8aToHex(u8aConcat(blake2AsU8a(keyHashBytes, 128), u8aToU8a(keyHashBytes)));
-  var storageKey = moduleHash + hexStripPrefix(storageHash) + hexStripPrefix(keyHashConcat);
+  // // Convert retrieved data to string
+  // const result = Buffer.concat(retrievedData).toString();
 
-  // read from storage based on the cid
-  const val = await api.rpc.state.queryStorageAt([storageKey]);
 
-  // convert hex to u8a
-  var bytes = hexToU8a("" + val[0]);
+  // generate storage key
+  const storageKeyByteArray = [];
+  const decodedAddress = decodeAddress(owner_public, false, 42);
+  storageKeyByteArray.push(decodedAddress);
 
-  // The first two bytes are 1... for whatever reason
-  // HOW TO: remove first 2 bytes -> hacky way, not good to hardcode
-  if (bytes[0] === 0x01 && bytes[1] === 0x01) {
-    bytes = bytes.slice(2);  // Remove the first 2 bytes byte if it's an added prefix
-    var signature = u8aToHex(bytes);
-  }
+  const hashItemType = u8aToU8a(cid);
+  storageKeyByteArray.push(hashItemType);
 
-  // read cid to see did_document to get hash
-  const hash = await readHashOffChain(cid); // check the most recently added block
+  const key = u8aConcat(...storageKeyByteArray);
+
+  const storageKey = blake2AsHex(key, 256);
+
+  const val = await api.query['peaqStorage']['itemStore'](storageKey);
+
+  // convert u8a to hex to obtain singature
+  var signature = u8aToHex(val);
 
   // verify hash and signature
-  var verifyResult = signatureVerify(hash, signature, owner_public);
+  var verifyResult = signatureVerify(hashed_did, signature, owner_public);
   console.log("\nSignature Verify Result: ", verifyResult.isValid, "\n");
 
   wsp.disconnect();
@@ -246,8 +264,8 @@ async function verifyOwnerDID() {
  */
 async function main() {
   try {
-    await createOwnerDID();     // creates a signature on-chain for owner's did_document that can be validated
-    await verifyOwnerDID();     // verifies signature from peaqStorage with cid read from peaqDid based on public address. Obtain hash in off-chain storage of did_document based on cid as well
+   await createOwnerDID();     // creates a signature on-chain for owner's did_document that can be validated
+   //await verifyOwnerDID();     // verifies signature from peaqStorage with cid read from peaqDid based on public address. Obtain hash in off-chain storage of did_document based on cid as well
   }
   catch (error) {
       console.error(error);
@@ -305,6 +323,36 @@ async function main() {
         // should continue to verify indefinitely
         
 }
+
+// ipfs off-chain data store
+async function ipfsTest() {
+  try {
+    // Example data to store
+    const data = 'Hello, IPFS from JavaScript!';
+
+    // Add data to IPFS
+    const { cid } = await ipfs.add(data);
+
+    // Log the CID
+    console.log('Stored data CID:', cid.toString());
+
+
+    // get data from did_document
+    const retrievedData = [];
+    for await (const chunk of ipfs.cat(cid)) {
+        retrievedData.push(chunk);
+    }
+  
+    // Convert retrieved data to string
+    const result = JSON.parse(Buffer.concat(retrievedData).toString());
+    console.log('Retrieved data:', result[0].document.verificationMethod);
+
+    console.log('Retrieved data:', result);
+} catch (error) {
+    console.error('Error:', error);
+}
+}
+
 
 // off-chain operations
 async function readHashOffChain(cid) {

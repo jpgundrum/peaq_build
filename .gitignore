@@ -10,3 +10,6 @@ coverage
 .DS_Store
 
 settings.json
+
+src/test.js
+src/playground.js
