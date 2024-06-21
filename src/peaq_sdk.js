@@ -211,135 +211,29 @@ async function fetchPermission(sdk, permId, OWNER) {
     return permission;
 }
 
-const main = async () => {
+async function main() {
     const sdk = await createSdkInstance();
     await sdk.connect();
+    const customFields = {
+        services: [
+            {
+                id: 'Machine-1',
+                type: 'Service-Endpoint',
+                serviceEndpoint: 'http://localhost:8080/ipfs/',
+                data: 'test2'
+            }
+        ]
+    };
+
     const did_hash = await sdk.did.create({
-        name: "MyNewDID"
+        name: "MyTestDid458903111",
     });
     const read = await sdk.did.read({
-        name: "MyNewDID"
+        name: "MyTestDid458903111"
     });
-    console.log(read);
-    
-
-
-    // const ownerPair = await generateKeyPair();
-
-    try {
-        // const didHash = await createDID(sdk, ownerPair);
-        // console.log(`\nDID hash: ${didHash}\n`);
-
-        // how to get user id to not be > 32??
-       //  const didInfo = await readDID(sdk, ownerPair);
-
-       //const address = "0x8c81c81b633fae0cc5713dd9d7ac2ae9fe5d63112b396554c0d8e19b199daf1d";
-
-
-        // const address = "5FEw7aWmqcnWDaMcwjKyGtJMjQfqYGxXmDWKVfcpnEPmUM7q";
-        // const roles = await sdk.rbac.fetchRoles({
-        //     owner: address
-        // });
-        // console.log(roles);
-
-        // const fetched = await sdk.rbac.fetchRole({
-        //     owner: address,
-        //     roleId: roleId,
-        // });
-        // console.log(fetched);
-      
-        // const roleDisable = await sdk.rbac.disableRole({
-        //     roleId: '559758ff-37fb-4d55-a2c2-5f68c296'
-        // });
-
-
-        // const groups = await sdk.rbac.fetchGroups({
-        //     owner: address
-        // });
-        // console.log(groups);
-        // const permissions = await sdk.rbac.fetchPermissions({
-        //     owner: address
-        // });
-        // console.log(permissions);
-
-      // await dataStorage(ownerPair);
-
-        // await verifyDataStorage(ownerPair);
-
-        // const roleID = await createRole(sdk, roleName);
-        // console.log(`Created role Id: ${roleID}\n`);
-
-        // const role = await fetchRole(ssdk, roleID, OWNER);
-        // console.log(`Fetched role: ${JSON.stringify(role)}\n`);
-
-        // const permId = await createPermission(sdk, permName);
-        // console.log(`Created a permission with id: ${permId.permissionId}\n`);
-
-        // const permission = await fetchPermission(sdk, permId.permissionId, OWNER);
-        // console.log(`Permission for sdk owner: ${JSON.stringify(permission)}\n`);
-
-        // const message = await disablePermission(sdk, permId.permissionId);
-        // console.log(`Removed previously created permission with the message: ${JSON.stringify(message)}\n`);
-
-        // const permission2 = await fetchPermission(sdk, permId.permissionId, OWNER);
-        // console.log(`Permission for sdk owner: ${JSON.stringify(permission2)}\n`);
-
-    }
-    catch (error) {
-        console.error(`Failed to create SDK instance: ${error}`);
-        throw error;
-    } finally {
-        await sdk.disconnect();
-    }
-};
-
-// code if you want to wait for transaction to be appended before going to next part of code
-
-// updateStorage:
-    // try {
-    //     const blockHash = await submitTransaction(api, api.tx.peaqStorage.updateItem(ownerPair.address, payloadHex), ownerPair);
-    //     console.log(`Transaction included in block hash: ${blockHash}`);
-        
-    //     // Additional logic after transaction is included or finalized...
-    //   } catch (error) {
-    //     console.error(`Error submitting transaction: ${error.message}`);
-    //   } finally {
-    //     await api.disconnect();
-    //   }
-
-// readStorage:
-// try {
-//     const blockHash = await submitTransaction(api, api.tx.peaqStorage.getItem(ownerPair.address), ownerPair);
-//     console.log(`Transaction included in block hash: ${blockHash}`);
-
-//     // Additional logic after transaction is included or finalized...
-//   } catch (error) {
-//     console.error(`Error submitting transaction: ${error.message}`);
-//   } finally {
-//     await api.disconnect();
-//   }
-
-  
-// function submitTransaction(api, extrinsic, ownerPair) {
-//     return new Promise((resolve, reject) => {
-//       extrinsic.signAndSend(ownerPair, ({ status, events }) => {
-//         console.log(`Current transaction status: ${status.type}`);
-  
-//         if (status.isInBlock) {
-//           console.log(`Transaction is in block: ${status.asInBlock.toString()}`);
-//           resolve(status.asInBlock.toString()); // Resolve with the block hash
-//         } else if (status.isFinalized) {
-//           console.log(`Transaction is finalized: ${status.asFinalized.toString()}`);
-//           resolve(status.asFinalized.toString()); // Resolve with the finalized block hash
-//         } else if (status.isDropped || status.isInvalid || status.isUsurped || status.isRetracted) {
-//           reject(new Error(`Transaction failed with status: ${status.type}`));
-//         }
-//       }).catch((error) => {
-//         console.error(`Transaction failed with error: ${error.toString()}`);
-//         reject(error);
-//       });
-//     });
-//   }
+   console.log(read);
+   await sdk.disconnect();
+}
 
 // exports used to run main from index.js and execute the tests in the test_sdk file
 export {main, createDID, readDID, createRole, fetchRole, createPermission, fetchPermission, disablePermission};

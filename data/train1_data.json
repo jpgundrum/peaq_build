@@ -1,0 +1,54 @@
+{
+  "t0": {
+    "id": "A1",
+    "admin": "myemail@gmail.com",
+    "name": "Highland Express",
+    "currentLocation": "Station 1",
+    "speed": "0mph",
+    "status": "Waiting",
+    "time": "7:59",
+    "route": [
+      {"station": "Station 1", "arrivalTime": "08:00"},
+      {"station": "Station 2", "arrivalTime": "08:02"}
+    ]
+  },
+  "t1": {
+    "id": "A1",
+    "admin": "myemail@gmail.com",
+    "name": "Highland Express",
+    "currentLocation": "Station 1",
+    "speed": "0mph",
+    "status": "Departing",
+    "time": "8:00",
+    "route": [
+      {"station": "Station 1", "arrivalTime": "08:00"},
+      {"station": "Station 2", "arrivalTime": "08:02"}
+    ]
+  },
+  "t2": {
+    "id": "A1",
+    "admin": "myemail@gmail.com",
+    "name": "Highland Express",
+    "currentLocation": "Station 1 -> Station 2",
+    "speed": "100mph",
+    "status": "Traveling",
+    "time": "8:01",
+    "route": [
+      {"station": "Station 1", "arrivalTime": "08:00"},
+      {"station": "Station 2", "arrivalTime": "08:02"}
+    ]
+  },
+  "t3": {
+    "id": "A1",
+    "admin": "myemail@gmail.com",
+    "name": "Highland Express",
+    "currentLocation": "Station 2",
+    "speed": "100mph",
+    "status": "Arrived",
+    "time": "8:02",
+    "route": [
+      {"station": "Station 1", "arrivalTime": "08:00"},
+      {"station": "Station 2", "arrivalTime": "08:02"}
+    ]
+  }
+}  

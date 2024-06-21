@@ -243,10 +243,11 @@ async function verifyOwnerDID() {
 
   const storageKey = blake2AsHex(key, 256);
 
-  const val = await api.query['peaqStorage']['itemStore'](storageKey);
+  const val = await api.query.peaqStorage.itemStore(storageKey);
 
   // convert u8a to hex to obtain singature
   var signature = u8aToHex(val);
+  console.log(signature);
 
   // verify hash and signature
   var verifyResult = signatureVerify(hashed_did, signature, owner_public);
@@ -264,8 +265,8 @@ async function verifyOwnerDID() {
  */
 async function main() {
   try {
-   await createOwnerDID();     // creates a signature on-chain for owner's did_document that can be validated
-   //await verifyOwnerDID();     // verifies signature from peaqStorage with cid read from peaqDid based on public address. Obtain hash in off-chain storage of did_document based on cid as well
+   //await createOwnerDID();     // creates a signature on-chain for owner's did_document that can be validated
+   await verifyOwnerDID();     // verifies signature from peaqStorage with cid read from peaqDid based on public address. Obtain hash in off-chain storage of did_document based on cid as well
   }
   catch (error) {
       console.error(error);

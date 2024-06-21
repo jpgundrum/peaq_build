@@ -22,3 +22,69 @@
     ]
   }
 ]
+
+
+
+EXTRA TRAIN DATA:[
+  {
+    "id": "A2",
+    "admin": "myemail@gmail.com",
+    "name": "City Zephyr",
+    "currentLocation": "Station 2",
+    "speed": "70mph",
+    "status": "Delayed",
+    "route": [
+      {"station": "Station 1", "arrivalTime": "08:30"},
+      {"station": "Station 2", "arrivalTime": "09:45"},
+      {"station": "Station 3", "arrivalTime": "11:00"},
+      {"station": "Station 4", "arrivalTime": "12:15"},
+      {"station": "Station 5", "arrivalTime": "13:30"}
+    ]
+  },
+  {
+    "id": "A3",
+    "admin": "myemail@gmail.com",
+    "name": "Mountain Climber",
+    "currentLocation": "Station 4",
+    "speed": "60mph",
+    "status": "On Time",
+    "route": [
+      {"station": "Station 5", "arrivalTime": "09:00"},
+      {"station": "Station 4", "arrivalTime": "10:15"},
+      {"station": "Station 3", "arrivalTime": "11:30"},
+      {"station": "Station 2", "arrivalTime": "12:45"},
+      {"station": "Station 1", "arrivalTime": "14:00"}
+    ]
+  },
+  {
+    "id": "A4",
+    "admin": "myemail@gmail.com",
+    "name": "Coastal Voyager",
+    "currentLocation": "Station 1",
+    "speed": "85mph",
+    "status": "On Time",
+    "route": [
+      {"station": "Station 1", "arrivalTime": "07:45"},
+      {"station": "Station 2", "arrivalTime": "09:00"},
+      {"station": "Station 3", "arrivalTime": "10:15"},
+      {"station": "Station 4", "arrivalTime": "11:30"},
+      {"station": "Station 5", "arrivalTime": "12:45"}
+    ]
+  },
+  {
+    "id": "A5",
+    "admin": "myemail@gmail.com",
+    "name": "Night Owl",
+    "currentLocation": "En Route between Station 2 and Station 3",
+    "speed": "75mph",
+    "status": "On Time",
+    "route": [
+      {"station": "Station 1", "arrivalTime": "22:00"},
+      {"station": "Station 2", "arrivalTime": "23:15"},
+      {"station": "Station 3", "arrivalTime": "00:30"},
+      {"station": "Station 4", "arrivalTime": "01:45"},
+      {"station": "Station 5", "arrivalTime": "03:00"}
+    ]
+  }
+]
+
