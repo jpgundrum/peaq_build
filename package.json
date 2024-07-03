@@ -24,6 +24,7 @@
     "@polkadot/util-crypto": "^12.0.1",
     "@wormhole-foundation/sdk": "^0.5.2",
     "axios": "^1.6.8",
+    "bignumber.js": "^9.1.2",
     "c8": "^9.1.0",
     "dotenv": "^16.4.1",
     "ethers": "^6.10.0",

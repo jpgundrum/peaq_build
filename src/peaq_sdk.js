@@ -226,10 +226,10 @@ async function main() {
     };
 
     const did_hash = await sdk.did.create({
-        name: "MyTestDid458903111",
+        name: "JG-test-123457",
     });
     const read = await sdk.did.read({
-        name: "MyTestDid458903111"
+        name: "JG-test-12345"
     });
    console.log(read);
    await sdk.disconnect();

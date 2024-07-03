@@ -17,6 +17,11 @@ const time_values = ['t0', 't1']
 // 1. Administrator
 // 2. Train 1
 // 3. Train 2
+// 4. User 1
+
+
+// Have wallets for users. The train sends cryptographic response-challenge to confirm that the user must sign 
+// to prove its identity
 
 
 // Have 2 programs:
