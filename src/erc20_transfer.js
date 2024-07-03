@@ -1,6 +1,4 @@
-// import WIP sdk
-import pkg from '../../../peaq_sdk/peaq-js/dist/packages/sdk/src/index.js';
-const { SDK } = pkg;
+// code on how to use erc-20 precompile to transfer agung from one eth wallet to a generated wallet
 
 // import polkadot & ethers functions to create new user wallets and interact with the erc-20 agung contract
 import { cryptoWaitReady, mnemonicGenerate, encodeAddress } from '@polkadot/util-crypto';
@@ -13,14 +11,13 @@ import { BigNumber }from 'bignumber.js';
 // env vars
 import dotenv from 'dotenv';
 dotenv.config();
-const OWNER_SEED = process.env.MNEMONIC;
-const OWNER_PRIVATE = process.env.PRIVATE_KEY;
+const OWNER_PRIVATE = process.env.PRIVATE_KEY; // ethereum private key of owner
 
 // local in precompile to transfer tokens
 import ABI from '../abi/erc-20.json' assert { type: "json" };
 const PRECOMPILE_ADDRESS = '0x0000000000000000000000000000000000000809';
 
-// set WSS url for interaction
+// set RPC url for ethers interaction
 const RPC_URL = 'https://rpcpc1-qa.agung.peaq.network';
 
 
@@ -56,7 +53,7 @@ async function transferTokens(OwnerPair, UserPair){
         await readBalances(contract, OwnerPair, UserPair);
 
         // transfer tokens. This transfers 0.0001 agung (as seen from MetaMask/polkadot interfaces)
-        const transferAmount = 100000000000000;
+        const transferAmount = ethers.toBigInt('100000000000000');
         try {
             const tx = await contract.transferFrom(OwnerPair.address, UserPair.address, transferAmount);
             console.log(`Transaction sent: ${tx.hash}`);
@@ -91,12 +88,10 @@ async function main() {
        const OwnerPair = await createOwner();
        const UserPair = await generateUser();
        await transferTokens(OwnerPair, UserPair);
-
-        //await createDID(UserPair);
     }
 
-    catch {
-
+    catch (error) {
+        console.log(error);
     }
 };
 
